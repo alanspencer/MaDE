@@ -11,3 +11,7 @@
 *.lai
 *.la
 *.a
+
+# Qt Files
+*.pro.user
+*.pro.user.*
