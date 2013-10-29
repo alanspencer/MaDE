@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="icon.ico">resources/icon/icon.ico</file>
+        <file alias="icon_16x15x32.png">resources/icon/icon_16x16x32.png</file>
+        <file alias="icon_48x48x32.png">resources/icon/icon_48x48x32.png</file>
+        <file alias="icon_128x128x32.png">resources/icon/icon_128x128x32.png</file>
+        <file alias="icon_256x256x32.png">resources/icon/icon_256x256x32.png</file>
+    </qresource>
+    <qresource prefix="/buttons"/>
+    <qresource prefix="/toolbar"/>
+</RCC>
