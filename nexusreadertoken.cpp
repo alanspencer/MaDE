@@ -6,9 +6,8 @@
 * repeatedly calling the getNextToken() function and then interpreting the token returned.
 *----------------------------------------------------------------------------------------------------------------------*/
 
-NexusReaderToken::NexusReaderToken(QTextStream *in)
+NexusReaderToken::NexusReaderToken(QTextStream &i):in(i)
 {
-    input = in;
 
     atEndOfFile = false;
     atEndOfLine = false;
@@ -16,35 +15,35 @@ NexusReaderToken::NexusReaderToken(QTextStream *in)
     fileLine = Q_INT64_C(1);
     filePos = Q_INT64_C(0);
     labileFlags	= 0;
-    saved = '\0';
-    special = '\0';
+    saved = QChar('\0');
+    special = QChar('\0');
 
-    whitespace[0]  = ' ';
-    whitespace[1]  = '\t';
-    whitespace[2]  = '\n';
-    whitespace[3]  = '\0';
+    whitespace.append(QChar(' '));
+    whitespace.append(QChar('\t'));
+    whitespace.append(QChar('\n'));
+    whitespace.append(QChar('\0'));
 
-    punctuation[0]	= '(';
-    punctuation[1]	= ')';
-    punctuation[2]	= '[';
-    punctuation[3]	= ']';
-    punctuation[4]	= '{';
-    punctuation[5]	= '}';
-    punctuation[6]	= '/';
-    punctuation[7]	= '\\';
-    punctuation[8]	= ',';
-    punctuation[9]	= ';';
-    punctuation[10]	= ':';
-    punctuation[11]	= '=';
-    punctuation[12]	= '*';
-    punctuation[13]	= '\'';
-    punctuation[14]	= '"';
-    punctuation[15]	= '`';
-    punctuation[16]	= '+';
-    punctuation[17]	= '-';
-    punctuation[18]	= '<';
-    punctuation[19]	= '>';
-    punctuation[20]	= '\0';
+    punctuation.append(QChar('('));
+    punctuation.append(QChar(')'));
+    punctuation.append(QChar('['));
+    punctuation.append(QChar(']'));
+    punctuation.append(QChar('{'));
+    punctuation.append(QChar('}'));
+    punctuation.append(QChar('/'));
+    punctuation.append(QChar('\\'));
+    punctuation.append(QChar(','));
+    punctuation.append(QChar(';'));
+    punctuation.append(QChar(':'));
+    punctuation.append(QChar('='));
+    punctuation.append(QChar('*'));
+    punctuation.append(QChar('\''));
+    punctuation.append(QChar('"'));
+    punctuation.append(QChar('`'));
+    punctuation.append(QChar('+'));
+    punctuation.append(QChar('-'));
+    punctuation.append(QChar('<'));
+    punctuation.append(QChar('>'));
+    punctuation.append(QChar('\0'));
 }
 
 qint64 NexusReaderToken::getFileColumn() const
@@ -63,15 +62,34 @@ qint64 NexusReaderToken::getFileLine() const
 }
 
 // Returns token in upper case (default), set toUpper to false to keep case
-QString NexusReaderToken::getToken(bool toUpper)
+QString NexusReaderToken::getToken(bool respectCase)
 {
-    if (!toUpper) {
+    if (!respectCase) {
         return token.toUpper();
     } else {
         return token;
     }
 }
 
+void NexusReaderToken::appendToToken(QChar ch)
+{
+    token.append(ch);
+}
+
+bool NexusReaderToken::tokenEquals(QString str, bool respectCase)
+{
+    QString tokenStr = token;
+    if (!respectCase) {
+        tokenStr.toUpper();
+        str.toUpper();
+    }
+
+    if (str != tokenStr) {
+        return false;
+    } else {
+        return true;
+    }
+}
 
 /*----------------------------------------------------------------------------------------------------------------------
 *	Reads next character from file and does all of the following before returning it to the calling function:
@@ -90,18 +108,18 @@ QChar NexusReaderToken::getNextChar()
 {
     QChar ch, chNext;
 
-    ch = input->read(Q_INT64_C(1)).at(0);
-    filePos = input->pos();
-    chNext = input->read(Q_INT64_C(1)).at(0);
-    input->seek(filePos);
+    ch = in.read(Q_INT64_C(1)).at(0);
+    filePos = in.pos();
+    chNext = in.read(Q_INT64_C(1)).at(0);
+    in.seek(filePos);
 
     if (ch == 13 || ch == 10) {
         fileLine++;
         fileCol = Q_INT64_C(1);
 
         if (ch == 13 && chNext == 10){
-            ch = input->read(Q_INT64_C(1)).at(0);
-            filePos = input->pos();
+            ch = in.read(Q_INT64_C(1)).at(0);
+            filePos = in.pos();
         }
         atEndOfLine = true;
     } else if (ch == EOF){
@@ -148,13 +166,112 @@ void NexusReaderToken::getNextToken()
 {
     resetToken();
 
-    QChar ch = ' ';
+    QChar ch = QChar(' ');
 
-    if (saved == '\0' || isWhitespace(saved)) {
+    if (saved == QChar('\0') || isWhitespace(saved)) {
         // Skip leading whitespace
-        while(isWhitespace(ch) && !atEndOfFile)
+        while(isWhitespace(ch) && !atEndOfFile) {
             ch = getNextChar();
+        }
         saved = ch;
+    }
+
+    for(;;) {
+        // Break now if singleCharacterToken mode on and token length > 0.
+        if (labileFlags & singleCharacterToken && token.size() > 0) {
+            break;
+        }
+        // Get next character either from saved or from input stream.
+        if (saved != '\0') {
+            ch = saved;
+            saved = '\0';
+        } else {
+            ch = getNextChar();
+        }
+
+        // Break now if we've hit EndOfFile.
+        if (atEndOfFile) {
+            break;
+        }
+
+        if (ch == '\n' && labileFlags & newlineIsToken) {
+            if (token.size() > 0) {
+                // Newline came after token, save newline until next time when it will be reported as a separate token.
+                atEndOfLine = 0;
+                saved = ch;
+            } else {
+                atEndOfLine = 1;
+                appendToToken(ch);
+            }
+            break;
+        } else if (isWhitespace(ch)) {
+            // Break only if we've begun adding to token (remember, if we hit a comment before a token,
+            // there might be further white space between the comment and the next token).
+            if (token.size() > 0) {
+                break;
+            }
+        } else if (ch == '_') {
+            // If underscores are discovered in unquoted tokens, they should be automatically converted to spaces.
+            if (!(labileFlags & preserveUnderscores)){
+                ch = QChar(' ');
+            }
+            appendToToken(ch);
+        } else if (ch == QChar('[')) {
+            // Get rest of comment and deal with it, but notice that we only break if the comment ends a token,
+            // not if it starts one (comment counts as whitespace). In the case of command comments
+            // (if saveCommandComment) GetComment will add to the token NxsString, causing us to break because
+            // token.size() will be greater than 0.
+            comment.clear();
+            //getComment();
+            if (token.size() > 0) {
+                break;
+            }
+        } else if (ch == QChar('(') && labileFlags & parentheticalToken) {
+            appendToToken(ch);
+            // Get rest of parenthetical token.
+            //getParentheticalToken();
+            break;
+        } else if (ch == QChar('{') && labileFlags & curlyBracketedToken) {
+            appendToToken(ch);
+            // Get rest of curly-bracketed token.
+            //getCurlyBracketedToken();
+            break;
+        } else if (ch == QChar('\"') && labileFlags & doubleQuotedToken) {
+            // Get rest of double-quoted token.
+            //getDoubleQuotedToken();
+            break;
+        } else if (ch == QChar('\'')) {
+            if (token.size() > 0) {
+                // We've encountered a single quote after a token has already begun to be read; should be another tandem
+                // single quote character immediately following.
+                ch = getNextChar();
+                if (ch == QChar('\'')) {
+                    appendToToken(ch);
+                } else {
+                    QString errormessage = "Expecting second single quote character";
+                    throw NexusReaderException(errormessage, getFilePosition(), getFileLine(), getFileColumn());
+                }
+            } else {
+                // Get rest of quoted NEXUS word and break, since we will have eaten one token after calling getQuoted.
+                getQuoted();
+            }
+            break;
+
+        } else if (isPunctuation(ch)){
+            if (token.size() > 0){
+                // If we've already begun reading the token, encountering a punctuation character means we should stop, saving
+                // the punctuation character for the next token.
+                saved = ch;
+                break;
+            } else {
+                // If we haven't already begun reading the token, encountering a punctuation character means we should stop and return
+                // the punctuation character as this token (i.e., the token is just the single punctuation character).
+                appendToToken(ch);
+                break;
+            }
+        } else {
+            appendToToken(ch);
+        }
     }
 }
 
@@ -167,10 +284,14 @@ void NexusReaderToken::resetToken()
  * Character Matching Functions
  *-----------------------------------------------------------------------------------*/
 
-bool NexusReaderToken::searchForCharInStr(QString searchIn, QChar searchFor)
+bool NexusReaderToken::searchForCharInList(QList<QChar> searchIn, QChar searchFor)
 {
-    const QRegExp regexp("[" + QRegExp::escape(searchIn) + "]+");
-    return regexp.exactMatch(QString(searchFor));
+    for (int i = 0; i < searchIn.count(); i++){
+        if (searchIn[i] == searchFor) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool NexusReaderToken::isWhitespace(QChar ch)
@@ -178,16 +299,35 @@ bool NexusReaderToken::isWhitespace(QChar ch)
     bool isWhitespace = false;
 
     // If ch is found in the whitespace array, it's whitespace
-    if (searchForCharInStr(whitespace, ch))
+    if (searchForCharInList(whitespace, ch)) {
         isWhitespace = true;
-
+    }
     // Unless of course ch is the newline character and we're currently treating newlines as darkspace!
-    if (labileFlags & newlineIsToken && ch == '\n')
+    if (labileFlags & newlineIsToken && ch == QChar('\n')) {
         isWhitespace = false;
+    }
 
     return isWhitespace;
 }
 
+bool NexusReaderToken::isPunctuation(QChar ch)
+{
+    bool isPunctuation = false;
+
+    // PAUP 4.0b10
+    //  o allows ]`<> inside taxon names
+    //  o allows `<> inside taxset names
+    if (searchForCharInList(punctuation, ch))
+        isPunctuation = true;
+    if (labileFlags & tildeIsPunctuation  && ch == '~')
+        isPunctuation = true;
+    if (labileFlags & useSpecialPunctuation  && ch == special)
+        isPunctuation = true;
+    if (labileFlags & hyphenNotPunctuation  && ch == '-')
+        isPunctuation = false;
+
+    return isPunctuation;
+}
 
 /*------------------------------------------------------------------------------------/
  * Formatting Functions
@@ -220,6 +360,8 @@ bool NexusReaderToken::needsQuotes(const QString &str)
     for (int i = 0; i > str.length(); i++){
         const QChar &ch = str[i];
 
+        const QRegExp regexp("[" + QRegExp::escape("\'[(){}\"-]/\\,;:=*`+<>") + "]+");
+
         // Is it a graphic symbol?
         bool isGraph;
         if (ch.isPrint() || ch.isSymbol()) {
@@ -230,7 +372,7 @@ bool NexusReaderToken::needsQuotes(const QString &str)
 
         if (!isGraph) {
             return true;
-        } else if (searchForCharInStr(QString("\'[(){}\"-]/\\,;:=*`+<>"), ch)){
+        } else if (regexp.exactMatch(QString(ch))){
             // ' and [ always need quotes.  other punctuation needs quotes if it is in a word of length > 1
             if (ch == '\'' || ch == '['){
                 return true;
@@ -240,4 +382,46 @@ bool NexusReaderToken::needsQuotes(const QString &str)
     }
     return false;
 }
+
+/*------------------------------------------------------------------------------------/
+ * Extracting Functions
+ *-----------------------------------------------------------------------------------*/
+
+// Gets remainder of a quoted NEXUS word (the first single quote character was read in already by getNextToken). This
+// function reads characters until the next single quote is encountered. An exception occurs if two single quotes occur
+// one after the other, in which case the function continues to gather characters until an isolated single quote is
+// found. The tandem quotes are stored as a single quote character in the token NxsString.
+void NexusReaderToken::getQuoted()
+{
+    QChar ch;
+
+    for(;;){
+        ch = getNextChar();
+        if (atEndOfFile)
+            break;
+
+        if (ch == '\'' && saved == '\'')
+            {
+            // Paired single quotes, save as one single quote
+            //
+            appendToToken(ch);
+            saved = '\0';
+            }
+        else if (ch == '\'' && saved == '\0')
+            {
+            // Save the single quote to see if it is followed by another
+            saved = '\'';
+            }
+        else if (saved == '\'')
+            {
+            // Previously read character was single quote but this is something else, save current character so that it will
+            // be the first character in the next token read
+            saved = ch;
+            break;
+            }
+        else
+            appendToToken(ch);
+    }
+}
+
 

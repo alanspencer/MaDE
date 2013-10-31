@@ -19,29 +19,28 @@
 // symbols disallowed by the NEXUS standard for use as state symbols)
 #define NEXUS_MAX_STATES 76
 
-typedef QVector<bool> NexusBoolVector;
-typedef QVector<char> NexusCharVector;
-typedef QVector<int> NexusIntVector;
-typedef QVector<unsigned> NexusUnsignedVector;
-typedef QVector<QString> NexusStringVector;
-typedef QVector<NexusStringVector> NexusAllelesVector;
-
-//typedef set<unsigned, less<unsigned>> NexusUnsignedSet;
-//typedef map<unsigned, NexusStringVector, less<unsigned>> NexusStringVectorMap;
-//typedef map<QString, QString, less<QString>> NexusStringMap;
-//typedef map<QString, NexusUnsignedSet, less<QString>> NexusUnsignedSetMap;
-
 #include "nexusreaderexception.h"
 #include "nexusreadertoken.h"
+
+#include <mainwindow.h>
+#include <settings.h>
 
 class NexusReader
 {
 public:
-    NexusReader(QString filename);
-    NexusReader(QFile file);
+    NexusReader(QString filename, MainWindow *mw, Settings *s);
 
-    addBlock();
-    execute();
+    MainWindow *mainwindow;
+    Settings *settings;
+    QString filename;
+    NexusReaderToken *token;
+
+    bool execute();
+
+    void nexusReaderLogError(QString message, qint64 filePos, qint64	fileLine, qint64 fileCol);
+    void nexusReaderLogMesssage(QString message);
+
+
 };
 
 #endif // NEXUSREADER_H

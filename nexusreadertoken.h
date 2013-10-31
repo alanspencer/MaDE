@@ -8,19 +8,20 @@
 class NexusReaderToken
 {
 public:
-    NexusReaderToken(QTextStream *in);
+    NexusReaderToken(QTextStream &i);
 
-    QString escapeString(const QString &);
-    QString getQuoted(const QString &);
-    bool needsQuotes(const QString &);
+    static QString escapeString(const QString &);
+    static QString getQuoted(const QString &);
+    static bool needsQuotes(const QString &);
 
     qint64 getFileColumn() const;
     qint64 getFilePosition() const;
     qint64 getFileLine() const;
 
-    QString getToken(bool toUpper = true);
+    QString getToken(bool respectCase = true);
     void getNextToken();
     QChar getNextChar();
+    bool tokenEquals(QString str, bool respectCase = true);
 
     /* For use with the variable labileFlags */
     enum NexusReaderTokenFlags	{
@@ -43,12 +44,13 @@ protected:
     void getQuoted();
 
 private:
+    QTextStream &in;     // reference to input from which tokens will be read
 
+    void appendToToken(QChar ch);
     void resetToken();
-    bool searchForCharInStr(QString searchIn, QChar searchFor);
+    bool searchForCharInList(QList<QChar> searchIn, QChar searchFor);
     bool isWhitespace(QChar ch);
-
-    QTextStream *input;     // reference to input from which tokens will be read
+    bool isPunctuation(QChar ch);
 
     qint64 filePos;         // current file position
     qint64 fileLine;        // current file line
@@ -61,9 +63,9 @@ private:
     bool atEndOfFile;       // true if end of file has been encountered
     bool atEndOfLine;       // true if newline encountered while newlineIsToken labile flag set
     QChar special;           // ad hoc punctuation character; default value is '\0'
-    int labileFlags;        // storage for flags in the NxsTokenFlags enum
-    QString punctuation;   // stores the 20 NEXUS punctuation characters
-    QString whitespace;     // stores the 3 whitespace characters: blank space, tab and newline
+    int labileFlags;        // storage for flags in the NexusTokenFlags enum
+    QList<QChar> punctuation;   // stores the 20 NEXUS punctuation characters
+    QList<QChar> whitespace;     // stores the 3 whitespace characters: blank space, tab and newline
 };
 
 #endif // NEXUSREADERTOKEN_H

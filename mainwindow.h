@@ -26,7 +26,7 @@ public:
 
     Ui::MainWindow *ui;
 
-    MainWindow *mw;   
+    MainWindow *mainwindow;
     Settings *settings;
 
     void logAppend(const QString &strTitle, const QString &strMessage);

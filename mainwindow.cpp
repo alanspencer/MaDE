@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    mw = this;
+    mainwindow = this;
 
     //setDockOptions(QMainWindow::VerticalTabs);
     tabifyDockWidget(ui->infoDockWidget, ui->taxaListDockWidget);
@@ -69,7 +69,7 @@ void MainWindow::logAppend(const QString &strTitle, const QString &strMessage)
 Matrix *MainWindow::createMatrix()
 {
     Matrix *child = new Matrix;
-    child->mw = mw;
+    child->mw = mainwindow;
     child->settings = settings;
     ui->mdiArea->addSubWindow(child);
     logAppend("Matrix (Mdi Child)","initialized.");
@@ -639,12 +639,17 @@ void MainWindow::importNexus()
     dialog.setNameFilter("NEXUS (*.nex)");
     dialog.setViewMode(QFileDialog::Detail);
     if (dialog.exec()) {
-        QStringList fileNames = dialog.selectedFiles();
-        QString fileName = fileNames[0];
-        logAppend("Action","open NEXUS file: "+fileName);
-        if (!fileName.isEmpty()) {
+        QStringList filenames = dialog.selectedFiles();
+        QString filename = filenames[0];
+        if (!filename.isEmpty()) {
             // Attempt to read the NEXUS file
+            NexusReader nexusReader(filename, mainwindow, settings);
+            if(nexusReader.execute()) {
+                // Create New Matrix from data
 
+            } else {
+                logAppend("Action","import NEXUS file aborted by NEXUS Reader.");
+            }
         }
     } else {
         logAppend("Action","import NEXUS file canceled.");
@@ -656,7 +661,7 @@ void MainWindow::importNexus()
 void MainWindow::settingsDialogOpen()
 {
     SettingsDialog *dialog = new SettingsDialog;
-    dialog->mw = mw;
+    dialog->mw = mainwindow;
     dialog->settings = settings;
     dialog->initalize();
     dialog->exec();
