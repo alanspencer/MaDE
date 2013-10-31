@@ -6,9 +6,8 @@
 * repeatedly calling the getNextToken() function and then interpreting the token returned.
 *----------------------------------------------------------------------------------------------------------------------*/
 
-NexusReaderToken::NexusReaderToken(QTextStream &i):in(i)
+NexusReaderToken::NexusReaderToken(QString d):nexusData(d)
 {
-
     atEndOfFile = false;
     atEndOfLine = false;
     fileCol = Q_INT64_C(1);
@@ -46,6 +45,14 @@ NexusReaderToken::NexusReaderToken(QTextStream &i):in(i)
     punctuation.append(QChar('\0'));
 }
 
+void NexusReaderToken::setLabileFlagBit(int bit)
+{
+    labileFlags |= bit;
+}
+
+/*------------------------------------------------------------------------------------/
+ * Return functions
+ *-----------------------------------------------------------------------------------*/
 qint64 NexusReaderToken::getFileColumn() const
 {
     return fileCol;
@@ -61,6 +68,16 @@ qint64 NexusReaderToken::getFileLine() const
     return fileLine;
 }
 
+bool NexusReaderToken::getAtEndOfFile()
+{
+    return atEndOfFile;
+}
+
+bool NexusReaderToken::getAtEndOfLine()
+{
+    return atEndOfLine;
+}
+
 // Returns token in upper case (default), set toUpper to false to keep case
 QString NexusReaderToken::getToken(bool respectCase)
 {
@@ -69,11 +86,6 @@ QString NexusReaderToken::getToken(bool respectCase)
     } else {
         return token;
     }
-}
-
-void NexusReaderToken::appendToToken(QChar ch)
-{
-    token.append(ch);
 }
 
 bool NexusReaderToken::tokenEquals(QString str, bool respectCase)
@@ -91,8 +103,28 @@ bool NexusReaderToken::tokenEquals(QString str, bool respectCase)
     }
 }
 
-/*----------------------------------------------------------------------------------------------------------------------
-*	Reads next character from file and does all of the following before returning it to the calling function:
+/*------------------------------------------------------------------------------------/
+ * Append functions
+ *-----------------------------------------------------------------------------------*/
+void NexusReaderToken::appendToToken(QChar ch)
+{
+    token.append(ch);
+}
+
+void NexusReaderToken::appendToComment(QChar ch)
+{
+    comment.append(ch);
+}
+
+// This function is called whenever an output comment (i.e., a comment beginning with an exclamation point) is found
+// in the data file. This version of OutputComment does nothing; override this virtual function to display the output
+// comment in the most appropriate way for the platform you are supporting.
+void NexusReaderToken::outputComment(const QString str)
+{
+
+}
+
+/* Reads next character from file and does all of the following before returning it to the calling function:
 *
 *	o if character read is either a carriage return or line feed, the variable line is incremented by one and the
 *	  variable fileCol is reset to zero
@@ -101,33 +133,38 @@ bool NexusReaderToken::tokenEquals(QString str, bool respectCase)
 *	o if either a carriage return or line feed is read, the character returned to the calling function is '\n' if
 *	  character read is neither a carriage return nor a line feed, fileCol is incremented by one and the character is
 *	  returned as is to the calling function
-*	o in all cases, the variable filePos is updated using a call to the pos function of QFile.
+*	o in all cases, the variable filePos is updated using a call to the pos function of QTextStream.
 */
 
 QChar NexusReaderToken::getNextChar()
 {
     QChar ch, chNext;
 
-    ch = in.read(Q_INT64_C(1)).at(0);
-    filePos = in.pos();
-    chNext = in.read(Q_INT64_C(1)).at(0);
-    in.seek(filePos);
+    if (!atEndOfFile){
+        ch = nexusData.at(filePos);
+        filePos++;
+    }
 
-    if (ch == 13 || ch == 10) {
-        fileLine++;
-        fileCol = Q_INT64_C(1);
-
-        if (ch == 13 && chNext == 10){
-            ch = in.read(Q_INT64_C(1)).at(0);
-            filePos = in.pos();
-        }
-        atEndOfLine = true;
-    } else if (ch == EOF){
+    if (nexusData.size()-1 == filePos) {
         atEndOfFile = true;
     } else {
-        fileCol++;
-        atEndOfLine = false;
+        chNext = nexusData.at(filePos+1);
+
+        if (ch == 13 || ch == 10) {
+            fileLine++;
+            fileCol = Q_INT64_C(1);
+
+            if (ch == 13 && chNext == 10){
+                ch = nexusData.at(filePos);
+                filePos++;
+            }
+            atEndOfLine = true;
+        } else {
+            fileCol++;
+            atEndOfLine = false;
+        }
     }
+
 
     if (atEndOfFile){
         return QChar('\0');
@@ -182,9 +219,9 @@ void NexusReaderToken::getNextToken()
             break;
         }
         // Get next character either from saved or from input stream.
-        if (saved != '\0') {
+        if (saved != QChar('\0')) {
             ch = saved;
-            saved = '\0';
+            saved = QChar('\0');
         } else {
             ch = getNextChar();
         }
@@ -222,23 +259,23 @@ void NexusReaderToken::getNextToken()
             // (if saveCommandComment) GetComment will add to the token NxsString, causing us to break because
             // token.size() will be greater than 0.
             comment.clear();
-            //getComment();
+            getComment();
             if (token.size() > 0) {
                 break;
             }
         } else if (ch == QChar('(') && labileFlags & parentheticalToken) {
             appendToToken(ch);
             // Get rest of parenthetical token.
-            //getParentheticalToken();
+            getParentheticalToken();
             break;
         } else if (ch == QChar('{') && labileFlags & curlyBracketedToken) {
             appendToToken(ch);
             // Get rest of curly-bracketed token.
-            //getCurlyBracketedToken();
+            getCurlyBracketedToken();
             break;
         } else if (ch == QChar('\"') && labileFlags & doubleQuotedToken) {
             // Get rest of double-quoted token.
-            //getDoubleQuotedToken();
+            getDoubleQuotedToken();
             break;
         } else if (ch == QChar('\'')) {
             if (token.size() > 0) {
@@ -424,4 +461,144 @@ void NexusReaderToken::getQuoted()
     }
 }
 
+// Reads rest of comment (starting '[' already input) and acts accordingly. If comment is an output comment, and if
+// an output stream has been attached, writes the output comment to the output stream. Otherwise, output comments are
+// simply ignored like regular comments. If the labileFlag bit saveCommandComments is in effect, the comment (without
+// the square brackets) will be stored in token.
+void NexusReaderToken::getComment()
+{
+    // Set comment level to 1 initially.  Every ']' encountered reduceslevel by one, so that we know we can stop when level becomes 0.
+    int level = 1;
 
+    // Get first character
+    QChar ch = getNextChar();
+
+    if (atEndOfFile){
+        errorMessage = "Unexpected end of file inside comment";
+        throw NexusReaderException(errorMessage, getFilePosition(), getFileLine(), getFileColumn());
+    }
+
+    // See if first character is the output comment symbol ('!') or command comment symbol (&)
+    bool printing = false;
+    bool command = false;
+    if (ch == '!'){
+        printing = true;
+    } else if (ch == QChar('&') && labileFlags & saveCommandComments){
+        command = true;
+        appendToToken(ch);
+    } else if (ch == QChar(']')) {
+        return;
+    }
+
+    // Now read the rest of the comment
+    for(;;)
+    {
+        ch = getNextChar();
+        if (atEndOfFile){
+            break;
+        }
+
+        if (ch == QChar(']')) {
+            level--;
+        } else if (ch == QChar('[')) {
+            level++;
+        }
+
+        if (level == 0) {
+            break;
+        }
+
+        if (printing) {
+            appendToComment(ch);
+        } else if (command) {
+            appendToToken(ch);
+        }
+    }
+
+    if (printing){
+        // Allow output comment to be printed or displayed in most appropriatemanner for target operating system
+        outputComment(comment);
+    }
+}
+
+// Reads rest of parenthetical token (starting '(' already input) up to and including the matching ')' character.  All
+// nested parenthetical phrases will be included.
+void NexusReaderToken::getParentheticalToken()
+{
+    // Set level to 1 initially.  Every ')' encountered reduces level by one, so that we know we can stop when level becomes 0.
+    int level = 1;
+    QChar ch;
+
+    for(;;)
+    {
+        ch = getNextChar();
+        if (atEndOfFile)
+            break;
+
+        if (ch == QChar(')')) {
+            level--;
+        } else if (ch == QChar('(')) {
+            level++;
+        }
+
+        appendToToken(ch);
+
+        if (level == 0) {
+            break;
+        }
+    }
+}
+
+// Reads rest of a token surrounded with curly brackets (the starting '{' has already been input) up to and including
+// the matching '}' character. All nested curly-bracketed phrases will be included.
+void NexusReaderToken::getCurlyBracketedToken()
+    {
+    // Set level to 1 initially.  Every '}' encountered reduceslevel by one, so that we know we can stop when level becomes 0.
+    int level = 1;
+    QChar ch;
+
+    for(;;)
+    {
+        ch = getNextChar();
+        if (atEndOfFile){
+            break;
+        }
+
+        if (ch == QChar('}')) {
+            level--;
+        } else if (ch == QChar('{')) {
+            level++;
+        }
+
+        appendToToken(ch);
+
+        if (level == 0) {
+            break;
+        }
+    }
+}
+
+// Gets remainder of a double-quoted NEXUS word (the first double quote character was read in already by getNextToken).
+// This function reads characters until the next double quote is encountered. Tandem double quotes within a
+// double-quoted NEXUS word are not allowed and will be treated as the end of the first word and the beginning of the
+// next double-quoted NEXUS word. Tandem single quotes inside a double-quoted NEXUS word are saved as two separate
+// single quote characters; to embed a single quote inside a double-quoted NEXUS word, simply use the single quote by
+// itself (not paired with another tandem single quote).
+void NexusReaderToken::getDoubleQuotedToken()
+{
+    QChar ch;
+
+    for(;;)
+    {
+        ch = getNextChar();
+        if (atEndOfFile){
+            break;
+        }
+
+        if (ch == QChar('\"')){
+            break;
+        } else {
+            appendToToken(ch);
+        }
+    }
+}

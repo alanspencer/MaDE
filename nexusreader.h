@@ -21,9 +21,12 @@
 
 #include "nexusreaderexception.h"
 #include "nexusreadertoken.h"
+#include "nexusreaderblock.h"
 
 #include <mainwindow.h>
 #include <settings.h>
+
+class NexusReaderBlock;
 
 class NexusReader
 {
@@ -40,6 +43,11 @@ public:
     void nexusReaderLogError(QString message, qint64 filePos, qint64	fileLine, qint64 fileCol);
     void nexusReaderLogMesssage(QString message);
 
+private:
+    void addBlock(NexusReaderBlock *block);
+    bool readUntilEndblock(NexusReaderToken *token, QString currentBlockName);
+
+    QList<NexusReaderBlock*> blockList;
 
 };
 

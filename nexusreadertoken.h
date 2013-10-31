@@ -8,7 +8,7 @@
 class NexusReaderToken
 {
 public:
-    NexusReaderToken(QTextStream &i);
+    NexusReaderToken(QString d);
 
     static QString escapeString(const QString &);
     static QString getQuoted(const QString &);
@@ -17,11 +17,15 @@ public:
     qint64 getFileColumn() const;
     qint64 getFilePosition() const;
     qint64 getFileLine() const;
-
+    bool getAtEndOfFile();
+    bool getAtEndOfLine();
     QString getToken(bool respectCase = true);
     void getNextToken();
-    QChar getNextChar();
+    void resetToken();
     bool tokenEquals(QString str, bool respectCase = true);
+    void setLabileFlagBit(int bit);
+
+    virtual void outputComment(const QString str);
 
     /* For use with the variable labileFlags */
     enum NexusReaderTokenFlags	{
@@ -41,16 +45,21 @@ public:
     QString errorMessage;
 
 protected:
-    void getQuoted();
-
-private:
-    QTextStream &in;     // reference to input from which tokens will be read
-
     void appendToToken(QChar ch);
-    void resetToken();
-    bool searchForCharInList(QList<QChar> searchIn, QChar searchFor);
+    void appendToComment(QChar ch);
+    QChar getNextChar();
+    void getQuoted();
+    void getComment();
+    void getParentheticalToken();
+    void getCurlyBracketedToken();
+    void getDoubleQuotedToken();
     bool isWhitespace(QChar ch);
     bool isPunctuation(QChar ch);
+
+private:
+    QString nexusData;
+
+    bool searchForCharInList(QList<QChar> searchIn, QChar searchFor);
 
     qint64 filePos;         // current file position
     qint64 fileLine;        // current file line

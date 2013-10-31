@@ -27,7 +27,8 @@ SOURCES += main.cpp\
     charactersdialog.cpp \
     nexusreaderexception.cpp \
     nexusreadertoken.cpp \
-    nexusreader.cpp
+    nexusreader.cpp \
+    nexusreaderblock.cpp
 
 HEADERS  += mainwindow.h \
     settings.h \
@@ -43,7 +44,8 @@ HEADERS  += mainwindow.h \
     charactersdialog.h \
     nexusreader.h \
     nexusreaderexception.h \
-    nexusreadertoken.h
+    nexusreadertoken.h \
+    nexusreaderblock.h
 
 FORMS    += mainwindow.ui \
     matrixTable.ui \
