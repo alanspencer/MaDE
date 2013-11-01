@@ -62,3 +62,6 @@ DEFINES += APP_VERSION=$$VERSION
 
 RESOURCES += \
     resources.qrc
+
+OTHER_FILES += \
+    README.md

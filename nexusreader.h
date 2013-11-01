@@ -1,3 +1,25 @@
+/*------------------------------------------------------------------------------------------------------
+ * Modified from work by Paul O. Lewis and Mark T. Holder. Available from http://sourceforge.net/p/ncl/
+ * under a GNU General Public License version 2.0 (GPLv2) Licence.
+ *
+ * Nexus Class Libray (NCL)
+ *
+ * Copyright (c) 2003-2012, Paul O. Lewis
+ * Copyright (c) 2007-2012, Mark T. Holder
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms of the GNU
+ * General Public License as published by the Free Software Foundation; either version 2 of the License,
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+ * USA.
+ *-----------------------------------------------------------------------------------------------------*/
+
 #ifndef NEXUSREADER_H
 #define NEXUSREADER_H
 
@@ -5,9 +27,7 @@
 #include <QFile>
 
 /*------------------------------------------------------------------------------------/
- * Single load point for all NEXUS parsing partly based on work by Paul O. Lewis as
- * part of NCL (Nexus Class Library) v2.0.04 which is available under a GNU General
- * Public License. http://sourceforge.net/projects/ncl/
+ * Single load point for all NEXUS parsing
  *
  * Set all variables needed for all other classes/headers, then include classes/headers
  *-----------------------------------------------------------------------------------*/
