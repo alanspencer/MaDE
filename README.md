@@ -11,6 +11,7 @@ GNU General Public License:
 __Matrix Data Editor (MaDE)__
 
 > _Matrix Data Editor (MaDE)_
+>
 > _Copyright (c) 2012-2013, Alan R.T. Spencer_
 >
 > _This program is free software; you can redistribute it and/or_
@@ -31,7 +32,9 @@ __Nexus Class Libray (NCL) [v2-stable branch]__
 Modified from work by Paul O. Lewis and Mark T. Holder. Available from [http://sourceforge.net/p/ncl/](http://sourceforge.net/p/ncl/ "NEXUS Class Library (NCL)") under a GNU General Public License version 2.0 (GPLv2) Licence.
 
 > _Nexus Class Libray (NCL)_
+>
 > _Copyright (c) 2003-2012, Paul O. Lewis_
+>
 > _Copyright (c) 2007-2012, Mark T. Holder_
 >
 > _This program is free software; you can redistribute it and/or_
