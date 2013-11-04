@@ -42,8 +42,6 @@
 
 #include <QTextStream>
 
-#include "nexusreader.h"
-
 class NexusReaderToken
 {
 public:

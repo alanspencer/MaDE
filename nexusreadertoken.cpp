@@ -38,6 +38,7 @@
  *-----------------------------------------------------------------------------------------------------*/
 
 #include "nexusreadertoken.h"
+#include "nexusreaderexception.h"
 
 /*----------------------------------------------------------------------------------------------------------------------
 * NexusReaderToken objects are used by NexusReader to extract words (tokens) from a NEXUS data file. NexusToken objects
@@ -158,9 +159,8 @@ void NexusReaderToken::appendToComment(QChar ch)
 // This function is called whenever an output comment (i.e., a comment beginning with an exclamation point) is found
 // in the data file. This version of OutputComment does nothing; override this virtual function to display the output
 // comment in the most appropriate way for the platform you are supporting.
-void NexusReaderToken::outputComment(const QString str)
+void NexusReaderToken::outputComment(const QString)
 {
-
 }
 
 /* Reads next character from file and does all of the following before returning it to the calling function:

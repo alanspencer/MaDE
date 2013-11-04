@@ -37,68 +37,32 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NEXUSREADER_H
-#define NEXUSREADER_H
+#ifndef NEXUSREADERTAXABLOCK_H
+#define NEXUSREADERTAXABLOCK_H
 
 #include <QWidget>
-#include <QFile>
 
-/*------------------------------------------------------------------------------------/
- * Single load point for all NEXUS parsing
- *
- * Set all variables needed for all other classes/headers, then include classes/headers
- *-----------------------------------------------------------------------------------*/
-
-// Maximum number of states that can be stored; the only limitation is that this
-// number be less than the maximum size of an int (not likely to be a problem).
-// A good number for this is 76, which is 96 (the number of distinct symbols
-// able to be input from a standard keyboard) less 20 (the number of symbols
-// symbols disallowed by the NEXUS standard for use as state symbols)
-#define NEXUS_MAX_STATES 76
-
-#include "nexusreadertoken.h"
+#include "nexusreader.h"
 #include "nexusreaderblock.h"
 
-#include <mainwindow.h>
-#include <settings.h>
-
-class NexusReaderToken;
-class NexusReaderBlockFactory;
-class NexusReaderBlock;
-
-class NexusReader
+class NexusReaderTaxaBlock : public NexusReaderBlock
 {
 public:
-    NexusReader(QString filename, MainWindow *mw, Settings *s);
+    NexusReaderTaxaBlock();
+    virtual ~NexusReaderTaxaBlock();
 
-    MainWindow *mainwindow;
-    Settings *settings;
-    QString filename;
-    NexusReaderToken *token;
+    virtual int addTaxonLabel(QString taxonLabel, bool quotesNeeded);
 
-    void addBlock(NexusReaderBlock *block);
-    void addBlockFactory(NexusReaderBlockFactory *factory);
-    void removeBlockFactory(NexusReaderBlockFactory *factory);
-    bool execute();
+    virtual void reset();
 
-    bool enteringBlock(QString currentBlockName);
-    void exitingBlock(QString currentBlockName);
-    void postBlockReadingHook(NexusReaderBlock *block);
-    void skippingBlock(QString currentBlockName);
-    void skippingDisabledBlock(QString currentBlockName);
-
-    void nexusReaderLogError(QString message, qint64 filePos, qint64	fileLine, qint64 fileCol);
-    void nexusReaderLogMesssage(QString message);
+    QList<QString> getTaxonList() { return taxonLabels; }
 
 protected:
-    typedef QList<NexusReaderBlockFactory *> blockFactoryList;
-    blockFactoryList factories; // list of pointers to factories capable of creating NexusBlock objects
-    NexusReaderBlock *currentBlock;	/* pointer to current block in list of blocks */
-    NexusReaderBlock *blockList;
+    virtual void read(NexusReaderToken *&token);
 
-private:
-    bool readUntilEndblock(NexusReaderToken *token, QString currentBlockName);
-
+    int taxaNumber; // == ntax, number of taxa found
+    QList<QString> taxonLabels; // storage for list of taxon labels
+    QList<bool> needsQuotes; // needsQuotes[i] true if label i needs to be quoted when output
 };
 
-#endif // NEXUSREADER_H
+#endif // NEXUSREADERTAXABLOCK_H

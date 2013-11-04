@@ -45,6 +45,7 @@
 #include "nexusreader.h"
 
 class NexusReader;
+class NexusReaderToken;
 
 class NexusReaderBlock
 {
@@ -52,11 +53,6 @@ class NexusReaderBlock
 friend class NexusReader;
 
 public:
-    NexusReaderBlock();
-
-    QString getID();
-    void setNexusReader(NexusReader *pointer);
-
     enum NexusCommandResult
     {
         STOP_PARSING_BLOCK,
@@ -64,12 +60,54 @@ public:
         UNKNOWN_COMMAND
     };
 
+    NexusReaderBlock();
+    virtual ~NexusReaderBlock();
+
+    void setNexusReader(NexusReader *pointer);
+    void setEnabled();
+    void setDisabled();
+
+    QString getID();
+    bool getEnabled();
+    bool getEmpty();
+
+    virtual void skippingCommand(QString commandName);
+
+    virtual void handleBlockIDCommand(NexusReaderToken *&token);
+    virtual void handleEndblock(NexusReaderToken *&token);
+    virtual void handleTitleCommand(NexusReaderToken *&token);
+
+    virtual void reset();
+
     QString errorMessage;
 
-private:
+protected:
+    NexusCommandResult	handleBasicBlockCommands(NexusReaderToken *&token);
+    void generateUnexpectedTokenException(NexusReaderToken *&token, QString expected = NULL);
+
+    virtual void read(NexusReaderToken *&token);
+    void requireEqualsToken(NexusReaderToken *&token, QString contextString);
+    void requireSemicolonToken(NexusReaderToken *&token, QString contextString);
+    int requirePositiveToken(NexusReaderToken *&token, QString contextString);
+
     NexusReader *nexusReader;
     QString blockID;
+    bool isEmpty;               // true if this object is not storing data
+    bool isEnabled;             // true if this block is currently enabled
+    QString title;              // holds the title of the block empty by default
+    QString blockIDString;      // Mesquite generates these. Don't know what they are for...
+    NexusReaderBlock *next;		// field pointer to next block in list
 
+};
+
+
+class NexusReaderBlockFactory
+{
+public:
+    virtual ~NexusReaderBlockFactory(){}
+    virtual NexusReaderBlock  *	getBlockReaderForID(const QString & id, NexusReader *) = 0;
+    virtual void blockError(NexusReaderBlock *b){ delete b; }
+    virtual void blockSkipped(NexusReaderBlock *b) { delete b; }
 };
 
 #endif // NEXUSREADERBLOCK_H

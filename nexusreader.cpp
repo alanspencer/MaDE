@@ -38,18 +38,65 @@
  *-----------------------------------------------------------------------------------------------------*/
 
 #include "nexusreader.h"
+#include "nexusreaderexception.h"
+#include "nexusreadertaxablock.h"
 
 NexusReader::NexusReader(QString fname, MainWindow *mw, Settings *s)
 {
     mainwindow = mw;
     settings = s;
     filename = fname;
+    blockList = NULL;
+    currentBlock = NULL;
 
     nexusReaderLogMesssage(QString("starting NEXUS Reader on file \"%1\".").arg(filename));
 }
 
+// Add a block reader
+void NexusReader::addBlock(NexusReaderBlock *block)
+{
+    block->setNexusReader(this);
+    if (!blockList) {
+        blockList = block;
+    } else {
+        // Add new block to end of list
+        NexusReaderBlock *current;
+        for (current = blockList; current && current->next;){
+            current = current->next;
+        }
+        current->next = block;
+    }
+}
+
+// Add a factory for NEXUS block readers.
+void NexusReader::addBlockFactory(NexusReaderBlockFactory *factory)
+{
+    if(factory){
+        factories.append(factory);
+    }
+}
+
+// Remove a factory for NEXUS block readers.
+void NexusReader::removeBlockFactory(NexusReaderBlockFactory *factory)
+{
+    if(factory){
+        factories.removeAll(factory);
+    }
+}
+
+// Reads the NxsReader data file from the input stream provided by `token'. This function is responsible for reading
+// through the name of a each block. Once it has read a block name, it searches for a block object to
+// handle reading the remainder of the block's contents. The block object is responsible for reading the END or
+// ENDBLOCK command as well as the trailing semicolon. This function also handles reading comments that are outside
+// of blocks, as well as the initial "#NEXUS" keyword.
 bool NexusReader::execute()
 {
+    // Add Block Reader
+    NexusReaderTaxaBlock *taxaBlock = new NexusReaderTaxaBlock();
+
+    this->addBlock(taxaBlock);
+
+    currentBlock = NULL;
     QString errorMessage;
 
     QFile file(filename);
@@ -99,31 +146,81 @@ bool NexusReader::execute()
                 break;
             }
 
-            if (token->tokenEquals("BEGIN")) {
-                token->getNextToken();
-                QString currentBlockName = token->getToken();
-                nexusReaderLogMesssage(QString("found a BLOCK called \"%1\" on line %2.").arg(currentBlockName).arg(token->getFileLine()));
+            if (token->tokenEquals("BEGIN")) {             
 
-                // Lookup current block from blocklist
-                bool blockReaderFound = false;
-                if (!blockList.empty()) {
-                    for (int i = 0; i < blockList.count(); i++)
-                    {
-                        if (token->tokenEquals(blockList[i]->getID())) {
-                            blockReaderFound = true;
-                            break;
-                        }
+                token->getNextToken();
+                QString currentBlockName = token->getToken().toUpper();
+                nexusReaderLogMesssage(QString("looking for BLOCK reader for block called \"%1\".").arg(currentBlockName));
+
+                // Find Block Class to reader BLOCK
+                for (currentBlock = blockList; currentBlock != NULL; currentBlock = currentBlock->next)
+                {
+                    if (token->tokenEquals(currentBlock->getID())){
+                        break;
                     }
                 }
-                if (blockReaderFound) {
-                    nexusReaderLogMesssage(QString("loading BLOCK reader for block called \"%1\".").arg(currentBlockName));
-                } else {
-                    nexusReaderLogMesssage(QString("no reader found for BLOCK called \"%1\", skipping BLOCK.").arg(currentBlockName));
+                nexusReaderLogMesssage(QString("found a BLOCK called \"%1\" on line %2.").arg(currentBlockName).arg(token->getFileLine()));
+
+                // Find Block Factory Class to reader BLOCK
+                NexusReaderBlockFactory * sourceOfBlock = NULL;
+                for (blockFactoryList::iterator iterator = factories.begin(); currentBlock == NULL && iterator != factories.end(); ++iterator)
+                {
+                    currentBlock = (*iterator)->getBlockReaderForID(currentBlockName, this);
+                    if (currentBlock) {
+                        sourceOfBlock = *iterator;
+                    }
+                }
+
+                if (currentBlock == NULL) {
+                    skippingBlock(currentBlockName);
                     if (!readUntilEndblock(token, currentBlockName)) {
                         return false;
                     }
-                }
+                } else if (currentBlock->getEnabled()) {
+                    if (!enteringBlock(currentBlockName)){
+                        skippingBlock(currentBlockName);
+                        if (sourceOfBlock){
+                            sourceOfBlock->blockSkipped(currentBlock);
+                        }
+                        if(!readUntilEndblock(token,currentBlockName)){
+                            return false;
+                        }
+                    } else {
+                        try {
+                            currentBlock->read(token);
+                            // Add to run block list?
 
+                        } catch (NexusReaderException x) {
+                            if (currentBlock->errorMessage.length() > 0) {
+                                nexusReaderLogError(currentBlock->errorMessage, x.filePos, x.fileLine, x.fileCol);
+                            } else {
+                                nexusReaderLogError(x.msg, x.filePos, x.fileLine, x.fileCol);
+                            }
+                            currentBlock->reset();
+                            if(sourceOfBlock){
+                                sourceOfBlock->blockError(currentBlock);
+                            }
+                            currentBlock = NULL;
+                            return false;
+                        }
+                        exitingBlock(currentBlockName);
+                        postBlockReadingHook(currentBlock);
+                    }
+                } else {
+                    skippingDisabledBlock(currentBlockName);
+                    if (sourceOfBlock){
+                        sourceOfBlock->blockSkipped(currentBlock);
+                    }
+                    if(!readUntilEndblock(token,currentBlockName)){
+                        return false;
+                    }
+                }
+                currentBlock = NULL;
+            } else if (token->tokenEquals("&SHOWALL")) {
+                // Used for debugging block...
+
+            } else if (token->tokenEquals("&LEAVE")) {
+                break;
             }
             qApp->processEvents();
         }
@@ -131,8 +228,45 @@ bool NexusReader::execute()
 
         int nMilliSeconds = runTimer.elapsed();
         nexusReaderLogMesssage(QString("NEXUS Reader has executed and returned with no fatal errors in %1 ms.").arg(nMilliSeconds));
+
+
         return true;
     }
+}
+
+// Called by the NexusReader object when a block named `blockName' is entered. Allows derived class overriding this
+// function to notify user of progress in parsing the NEXUS file. Also gives program the opportunity to ask user if it
+// is ok to purge data currently contained in this block. If user is asked whether existing data should be deleted, and
+// the answer comes back no, then then the overrided function should return false, otherwise it should return true.
+// This (base class) version always returns true.
+bool NexusReader::enteringBlock(QString currentBlockName)
+{
+    nexusReaderLogMesssage(QString("entering BLOCK called \"%1\"...").arg(currentBlockName));
+    return true;
+}
+
+// Called by the NexusReader object when a block named `blockName' is being exited. Allows derived class overriding this
+// function to notify user of progress in parsing the NEXUS file.
+void NexusReader::exitingBlock(QString currentBlockName)
+{
+    nexusReaderLogMesssage(QString("exiting BLOCK called \"%1\"...").arg(currentBlockName));
+}
+
+// Called after `block' has returned from NexusReader::read()
+void NexusReader::postBlockReadingHook(NexusReaderBlock *block)
+{
+    nexusReaderLogMesssage(QString("running post-read hook on BLOCK called \"%1\"...").arg(block->getID()));
+
+}
+
+void NexusReader::skippingBlock(QString currentBlockName)
+{
+    nexusReaderLogMesssage(QString("no reader found for BLOCK called \"%1\", skipping BLOCK.").arg(currentBlockName));
+}
+
+void NexusReader::skippingDisabledBlock(QString currentBlockName)
+{
+    nexusReaderLogMesssage(QString("BLOCK called \"%1\" is disabled, skipping BLOCK.").arg(currentBlockName));
 }
 
 bool NexusReader::readUntilEndblock(NexusReaderToken *token, QString currentBlockName)
@@ -158,10 +292,6 @@ bool NexusReader::readUntilEndblock(NexusReaderToken *token, QString currentBloc
     }
 }
 
-void NexusReader::addBlock(NexusReaderBlock *block)
-{
-    blockList.append(block);
-}
 
 // Called when an error is encountered in a NEXUS file. Allows program to give user details of the error as well as
 // the precise location of the error via the application log.

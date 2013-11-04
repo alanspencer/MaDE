@@ -39,7 +39,8 @@ SOURCES += main.cpp\
     nexusreaderexception.cpp \
     nexusreadertoken.cpp \
     nexusreader.cpp \
-    nexusreaderblock.cpp
+    nexusreaderblock.cpp \
+    nexusreadertaxablock.cpp
 
 HEADERS  += mainwindow.h \
     settings.h \
@@ -56,7 +57,8 @@ HEADERS  += mainwindow.h \
     nexusreader.h \
     nexusreaderexception.h \
     nexusreadertoken.h \
-    nexusreaderblock.h
+    nexusreaderblock.h \
+    nexusreadertaxablock.h
 
 FORMS    += mainwindow.ui \
     matrixTable.ui \
