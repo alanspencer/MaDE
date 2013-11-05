@@ -46,11 +46,10 @@
 
 class NexusReader;
 class NexusReaderToken;
+class NexusReaderException;
 
 class NexusReaderBlock
 {
-
-friend class NexusReader;
 
 public:
     enum NexusCommandResult
@@ -76,16 +75,19 @@ public:
     virtual void handleBlockIDCommand(NexusReaderToken *&token);
     virtual void handleEndblock(NexusReaderToken *&token);
     virtual void handleTitleCommand(NexusReaderToken *&token);
-
+    virtual void read(NexusReaderToken *&token);
+    virtual QMap<QString, QVariant> getData();
     virtual void reset();
 
     QString errorMessage;
+
+    NexusReaderBlock *next;		// field pointer to next block in list
+
 
 protected:
     NexusCommandResult	handleBasicBlockCommands(NexusReaderToken *&token);
     void generateUnexpectedTokenException(NexusReaderToken *&token, QString expected = NULL);
 
-    virtual void read(NexusReaderToken *&token);
     void requireEqualsToken(NexusReaderToken *&token, QString contextString);
     void requireSemicolonToken(NexusReaderToken *&token, QString contextString);
     int requirePositiveToken(NexusReaderToken *&token, QString contextString);
@@ -96,8 +98,7 @@ protected:
     bool isEnabled;             // true if this block is currently enabled
     QString title;              // holds the title of the block empty by default
     QString blockIDString;      // Mesquite generates these. Don't know what they are for...
-    NexusReaderBlock *next;		// field pointer to next block in list
-
+    QMap<QString, QVariant> blockData; // standard data return
 };
 
 

@@ -23,6 +23,12 @@
 #include <QtWidgets>
 #include <QMessageBox>
 
+
+#include "settings.h"
+#include "matrix.h"
+#include "nexusreader.h"
+#include "settingsdialog.h"
+
 class Matrix;
 class QAction;
 class QMdiSubWindow;

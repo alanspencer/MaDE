@@ -43,7 +43,9 @@
 #include <QWidget>
 
 #include "nexusreader.h"
-#include "nexusreaderblock.h"
+
+class NexusReaderBlock;
+class NexusReaderException;
 
 class NexusReaderTaxaBlock : public NexusReaderBlock
 {
@@ -51,17 +53,15 @@ public:
     NexusReaderTaxaBlock();
     virtual ~NexusReaderTaxaBlock();
 
-    virtual int addTaxonLabel(QString taxonLabel, bool quotesNeeded);
-
+    virtual int addTaxonLabel(QString taxonLabel);
+    virtual QMap<QString,QVariant> getData();
     virtual void reset();
-
-    QList<QString> getTaxonList() { return taxonLabels; }
 
 protected:
     virtual void read(NexusReaderToken *&token);
 
     int taxaNumber; // == ntax, number of taxa found
-    QList<QString> taxonLabels; // storage for list of taxon labels
+    QList<QVariant> taxonLabels; // storage for list of taxon labels
     QList<bool> needsQuotes; // needsQuotes[i] true if label i needs to be quoted when output
 };
 

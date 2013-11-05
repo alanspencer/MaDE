@@ -38,7 +38,6 @@
  *-----------------------------------------------------------------------------------------------------*/
 
 #include "nexusreadertaxablock.h"
-#include "nexusreaderexception.h"
 
 NexusReaderTaxaBlock::NexusReaderTaxaBlock()
 {
@@ -86,7 +85,6 @@ void NexusReaderTaxaBlock::read(NexusReaderToken *&token)
                 nexusReader->nexusReaderLogMesssage(QString("TAXA Block: found command \"NTAX\" on line %2. Taxa Number = %1. Now looking for \"TAXLABELS\"...").arg(nominalTaxaNumber).arg(token->getFileLine()));
                 requireSemicolonToken(token, "DIMENSIONS");
             } else if (token->tokenEquals("TAXLABELS")) {
-                qDebug() << "TAXLABELS found";
                 if (nominalTaxaNumber <= 0) {
                     throw NexusReaderException("NTAX must be specified before TAXLABELS command", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                 }
@@ -97,7 +95,7 @@ void NexusReaderTaxaBlock::read(NexusReaderToken *&token)
                 {
                     token->getNextToken();
                     // Should check to make sure this is not punctuation
-                    addTaxonLabel(token->getToken(), token->needsQuotes(token->getToken()));
+                    addTaxonLabel(token->getToken());
                     nexusReader->nexusReaderLogMesssage(QString("TAXA Block: extracted taxon label [T%1] -> %2.").arg(i+1).arg(token->getToken()));
                 }
                 requireSemicolonToken(token, "TAXLABELS");
@@ -118,13 +116,20 @@ void NexusReaderTaxaBlock::read(NexusReaderToken *&token)
 
 // Adds taxon label to end of list of taxon labels and increments ntax by 1. Returns index of taxon label just
 // added.
-int NexusReaderTaxaBlock::addTaxonLabel(QString taxonLabel, bool quotesNeeded)
+int NexusReaderTaxaBlock::addTaxonLabel(QString taxonLabel)
 {
     isEmpty = false;
-    needsQuotes.append(quotesNeeded);
     taxonLabels.append(taxonLabel);
     taxaNumber++;
     return (taxaNumber-1);
+}
+
+// This virtual function must be overridden for each derived class to provide the ability to return a standard data object.
+QMap<QString, QVariant> NexusReaderTaxaBlock::getData()
+{
+    blockData.insert("ntax", taxaNumber-1);
+    blockData.insert("taxonLabels", taxonLabels);
+    return blockData;
 }
 
 // Flushes taxonLabels and sets taxaNumber to 0 in preparation for reading a new TAXA block.

@@ -38,7 +38,6 @@
  *-----------------------------------------------------------------------------------------------------*/
 
 #include "nexusreaderblock.h"
-#include "nexusreaderexception.h"
 
 NexusReaderBlock::NexusReaderBlock()
 {
@@ -53,15 +52,26 @@ NexusReaderBlock::NexusReaderBlock()
 }
 
 // Nothing to be done.
-NexusReaderBlock::~NexusReaderBlock(){}
+NexusReaderBlock::~NexusReaderBlock()
+{
 
+}
 
 // This virtual function must be overridden for each derived class to provide the ability to read everything following
 // the block name (which is read by the NexusReader object) to the end or endblock statement. Characters are read from
 // the input stream 'in'. Note that to get output comments displayed, you must derive a class from NexusReaderToken,
 // override the member function OutputComment to display a supplied comment, and then pass a reference to an object of
 // the derived class to this function.
-void NexusReaderBlock::read(NexusReaderToken *&){}
+void NexusReaderBlock::read(NexusReaderToken *&)
+{
+
+}
+
+// This virtual function must be overridden for each derived class to provide the ability to return a standard data object.
+QMap<QString, QVariant> NexusReaderBlock::getData()
+{
+    return blockData;
+}
 
 // Hook to consolidate the handling of COMMANDS that are common to all blocks (TITLE, BLOCKID, END, ENDBLOCK -- and,
 // evenually, LINK).

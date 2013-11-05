@@ -38,7 +38,6 @@
  *-----------------------------------------------------------------------------------------------------*/
 
 #include "nexusreader.h"
-#include "nexusreaderexception.h"
 #include "nexusreadertaxablock.h"
 
 NexusReader::NexusReader(QString fname, MainWindow *mw, Settings *s)
@@ -53,35 +52,97 @@ NexusReader::NexusReader(QString fname, MainWindow *mw, Settings *s)
 }
 
 // Add a block reader
-void NexusReader::addBlock(NexusReaderBlock *block)
+void NexusReader::addBlock(QString blockID)
 {
-    block->setNexusReader(this);
-    if (!blockList) {
-        blockList = block;
-    } else {
-        // Add new block to end of list
-        NexusReaderBlock *current;
-        for (current = blockList; current && current->next;){
-            current = current->next;
+    NexusReaderBlock *block;
+
+    if(blockID == "TAXA") {
+        block = new NexusReaderTaxaBlock();
+    }
+
+    if (block != NULL) {
+        block->setNexusReader(this);
+        if (!blockList) {
+            blockList = block;
+        } else {
+            // Add new block to end of list
+            NexusReaderBlock *current;
+            for (current = blockList; current && current->next;){
+                current = current->next;
+            }
+            current->next = block;
         }
-        current->next = block;
     }
 }
 
-// Add a factory for NEXUS block readers.
-void NexusReader::addBlockFactory(NexusReaderBlockFactory *factory)
+QMap<QString, QVariant> NexusReader::getBlockData(QString blockID, int blockKey = 0)
 {
-    if(factory){
-        factories.append(factory);
+
+    NexusReaderBlockList blockUsedList;
+    if (blockIDToBlockList.contains(blockID)){
+        blockUsedList = blockIDToBlockList.value(blockID);
+        if (blockUsedList.count() == 1) {
+            return blockUsedList[0]->getData();
+        } else if (blockUsedList.count() > 1 && blockKey < blockUsedList.count()) {
+            return blockUsedList[blockKey]->getData();
+        }
+    }
+
+    QMap<QString, QVariant> data;
+    return data;
+}
+
+int NexusReader::getBlockCount(QString blockID)
+{
+    return blockIDToBlockList.value(blockID).count();
+}
+
+// Returns a map from all block ids that have been read to all instances that the NexusReader knows have been read and
+// have NOT been cleared.
+NexusReaderBlockIDToBlockList NexusReader::getUsedBlocks()
+{
+    return blockIDToBlockList;
+}
+
+
+
+void NexusReader::addBlockToUsedBlockList(const QString &blockID, NexusReaderBlock *block)
+{
+    if (blockIDToBlockList.contains(blockID)) {
+        NexusReaderBlockList exsitingBlockList;
+        exsitingBlockList = blockIDToBlockList.value(blockID);
+        exsitingBlockList.append(block);
+        blockIDToBlockList.insert(blockID, exsitingBlockList);
+    } else {
+        NexusReaderBlockList newBlockList;
+        newBlockList.append(block);
+        blockIDToBlockList.insert(blockID, newBlockList);
     }
 }
 
-// Remove a factory for NEXUS block readers.
-void NexusReader::removeBlockFactory(NexusReaderBlockFactory *factory)
+int NexusReader::removeBlockFromUsedBlockList(NexusReaderBlock *block)
 {
-    if(factory){
-        factories.removeAll(factory);
+    int totalDel = 0;
+    int before;
+    int after;
+    QList<QString> keysToDel;
+
+    NexusReaderBlockIDToBlockList::iterator i;
+    for (i = blockIDToBlockList.begin(); i != blockIDToBlockList.end(); ++i) {
+        NexusReaderBlockList & brl = i.value();
+        before = brl.size();
+        brl.removeAll(block);
+        after = brl.size();
+        if (after == 0){
+            keysToDel.append(i.key());
+        }
+        totalDel += before - after;
     }
+    for (int i = 0; i < keysToDel.count(); i++) {
+        blockIDToBlockList.remove(keysToDel[i]);
+    }
+
+    return totalDel;
 }
 
 // Reads the NxsReader data file from the input stream provided by `token'. This function is responsible for reading
@@ -91,11 +152,6 @@ void NexusReader::removeBlockFactory(NexusReaderBlockFactory *factory)
 // of blocks, as well as the initial "#NEXUS" keyword.
 bool NexusReader::execute()
 {
-    // Add Block Reader
-    NexusReaderTaxaBlock *taxaBlock = new NexusReaderTaxaBlock();
-
-    this->addBlock(taxaBlock);
-
     currentBlock = NULL;
     QString errorMessage;
 
@@ -161,16 +217,6 @@ bool NexusReader::execute()
                 }
                 nexusReaderLogMesssage(QString("found a BLOCK called \"%1\" on line %2.").arg(currentBlockName).arg(token->getFileLine()));
 
-                // Find Block Factory Class to reader BLOCK
-                NexusReaderBlockFactory * sourceOfBlock = NULL;
-                for (blockFactoryList::iterator iterator = factories.begin(); currentBlock == NULL && iterator != factories.end(); ++iterator)
-                {
-                    currentBlock = (*iterator)->getBlockReaderForID(currentBlockName, this);
-                    if (currentBlock) {
-                        sourceOfBlock = *iterator;
-                    }
-                }
-
                 if (currentBlock == NULL) {
                     skippingBlock(currentBlockName);
                     if (!readUntilEndblock(token, currentBlockName)) {
@@ -179,17 +225,17 @@ bool NexusReader::execute()
                 } else if (currentBlock->getEnabled()) {
                     if (!enteringBlock(currentBlockName)){
                         skippingBlock(currentBlockName);
-                        if (sourceOfBlock){
-                            sourceOfBlock->blockSkipped(currentBlock);
-                        }
                         if(!readUntilEndblock(token,currentBlockName)){
                             return false;
                         }
                     } else {
+                        removeBlockFromUsedBlockList(currentBlock);
+                        currentBlock->reset();
+
                         try {
                             currentBlock->read(token);
                             // Add to run block list?
-
+                            addBlockToUsedBlockList(currentBlockName, currentBlock);
                         } catch (NexusReaderException x) {
                             if (currentBlock->errorMessage.length() > 0) {
                                 nexusReaderLogError(currentBlock->errorMessage, x.filePos, x.fileLine, x.fileCol);
@@ -197,9 +243,6 @@ bool NexusReader::execute()
                                 nexusReaderLogError(x.msg, x.filePos, x.fileLine, x.fileCol);
                             }
                             currentBlock->reset();
-                            if(sourceOfBlock){
-                                sourceOfBlock->blockError(currentBlock);
-                            }
                             currentBlock = NULL;
                             return false;
                         }
@@ -208,9 +251,6 @@ bool NexusReader::execute()
                     }
                 } else {
                     skippingDisabledBlock(currentBlockName);
-                    if (sourceOfBlock){
-                        sourceOfBlock->blockSkipped(currentBlock);
-                    }
                     if(!readUntilEndblock(token,currentBlockName)){
                         return false;
                     }

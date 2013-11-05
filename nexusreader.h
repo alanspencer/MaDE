@@ -58,6 +58,7 @@
 
 #include "nexusreadertoken.h"
 #include "nexusreaderblock.h"
+#include "nexusreaderexception.h"
 
 #include <mainwindow.h>
 #include <settings.h>
@@ -65,6 +66,10 @@
 class NexusReaderToken;
 class NexusReaderBlockFactory;
 class NexusReaderBlock;
+class NexusReaderException;
+
+typedef QList<NexusReaderBlock *> NexusReaderBlockList;
+typedef QMap<QString, NexusReaderBlockList> NexusReaderBlockIDToBlockList;
 
 class NexusReader
 {
@@ -76,9 +81,9 @@ public:
     QString filename;
     NexusReaderToken *token;
 
-    void addBlock(NexusReaderBlock *block);
-    void addBlockFactory(NexusReaderBlockFactory *factory);
-    void removeBlockFactory(NexusReaderBlockFactory *factory);
+    void addBlock(QString blockID);
+    QMap<QString, QVariant> getBlockData(QString blockID, int blockKey);
+    int getBlockCount(QString blockID);
     bool execute();
 
     bool enteringBlock(QString currentBlockName);
@@ -90,15 +95,19 @@ public:
     void nexusReaderLogError(QString message, qint64 filePos, qint64	fileLine, qint64 fileCol);
     void nexusReaderLogMesssage(QString message);
 
+    NexusReaderBlockIDToBlockList getUsedBlocks();
+
 protected:
-    typedef QList<NexusReaderBlockFactory *> blockFactoryList;
-    blockFactoryList factories; // list of pointers to factories capable of creating NexusBlock objects
     NexusReaderBlock *currentBlock;	/* pointer to current block in list of blocks */
     NexusReaderBlock *blockList;
+
 
 private:
     bool readUntilEndblock(NexusReaderToken *token, QString currentBlockName);
 
+    NexusReaderBlockIDToBlockList blockIDToBlockList;
+    void addBlockToUsedBlockList(const QString &, NexusReaderBlock *);
+    int removeBlockFromUsedBlockList(NexusReaderBlock *);
 };
 
 #endif // NEXUSREADER_H

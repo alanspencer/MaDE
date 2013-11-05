@@ -38,7 +38,6 @@
  *-----------------------------------------------------------------------------------------------------*/
 
 #include "nexusreadertoken.h"
-#include "nexusreaderexception.h"
 
 /*----------------------------------------------------------------------------------------------------------------------
 * NexusReaderToken objects are used by NexusReader to extract words (tokens) from a NEXUS data file. NexusToken objects

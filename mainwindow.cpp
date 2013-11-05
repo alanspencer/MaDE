@@ -16,10 +16,6 @@
  *-----------------------------------------------------------------------------------------------------*/
 
 #include "mainwindow.h"
-#include "settings.h"
-#include "matrix.h"
-#include "nexusreader.h"
-#include "settingsdialog.h"
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -661,8 +657,23 @@ void MainWindow::importNexus()
         if (!filename.isEmpty()) {
             // Attempt to read the NEXUS file
             NexusReader nexusReader(filename, mainwindow, settings);
+            // Add Block Reader
+            nexusReader.addBlock("TAXA");
+
             if(nexusReader.execute()) {
                 // Create New Matrix from data
+                if (nexusReader.getBlockCount("TAXA") != 0) {
+                    QMap<QString, QVariant> taxaData = nexusReader.getBlockData("TAXA", 0);
+
+                    // Available data keys: "ntax"; "taxonLabels".
+                    int ntax = taxaData.value("ntax").toInt();
+                    QList<QVariant> taxonLabels = taxaData.value("taxonLabels").toList();
+
+                    qDebug() << "ntax =" << ntax;
+                    for(int i = 0; i < taxonLabels.count(); i++){
+                        qDebug() << "T" << i << "=" << taxonLabels[i].toString();
+                    }
+                }
 
             } else {
                 logAppend("Action","import NEXUS file aborted by NEXUS Reader.");
