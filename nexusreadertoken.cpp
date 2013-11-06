@@ -127,7 +127,59 @@ QString NexusReaderToken::getToken(bool respectCase)
     }
 }
 
-bool NexusReaderToken::tokenEquals(QString str, bool respectCase)
+// Returns token.size()
+int NexusReaderToken::getTokenLength()
+{
+    return token.size();
+}
+
+// Returns true if current token is a single character and this character is either '+' or '-'.
+bool NexusReaderToken::isPlusMinusToken()
+{
+    if (token.size() == 1 && (token[0] == '+' || token[0] == '-')){
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// Returns true if current token is a single character and this character is a punctuation character (as defined in
+// IsPunctuation function).
+bool NexusReaderToken::isPunctuationToken()
+{
+    if (token.size() == 1 && isPunctuation(QChar(token[0]))){
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// Returns true if current token is a single character and this character is a whitespace character (as defined in
+// IsWhitespace function).
+bool NexusReaderToken::isWhitespaceToken()
+{
+    if (token.size() == 1 && isWhitespace(QChar(token[0]))){
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//Strips whitespace from currently-stored token. Removes leading, trailing, and embedded whitespace characters.
+void NexusReaderToken::stripWhitespace()
+{
+    QString str;
+    for (int i = 0; i < token.size(); i++)
+    {
+        if (isWhitespace(token.at(i))) {
+            continue;
+        }
+        str.append(token[i]);
+    }
+    token = str;
+}
+
+bool NexusReaderToken::equals(QString str, bool respectCase)
 {
     QString tokenStr = token;
     if (!respectCase) {

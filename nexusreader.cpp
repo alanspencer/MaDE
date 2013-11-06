@@ -39,6 +39,7 @@
 
 #include "nexusreader.h"
 #include "nexusreadertaxablock.h"
+#include "nexusreadercharactersblock.h"
 
 NexusReader::NexusReader(QString fname, MainWindow *mw, Settings *s)
 {
@@ -54,23 +55,42 @@ NexusReader::NexusReader(QString fname, MainWindow *mw, Settings *s)
 // Add a block reader
 void NexusReader::addBlock(QString blockID)
 {
-    NexusReaderBlock *block;
-
-    if(blockID == "TAXA") {
-        block = new NexusReaderTaxaBlock();
+    if(!blocksToLoad.contains(blockID)) {
+        blocksToLoad.append(blockID);
     }
+}
 
-    if (block != NULL) {
-        block->setNexusReader(this);
-        if (!blockList) {
-            blockList = block;
-        } else {
-            // Add new block to end of list
-            NexusReaderBlock *current;
-            for (current = blockList; current && current->next;){
-                current = current->next;
+void NexusReader::loadBlocks()
+{
+    NexusReaderBlock *block;
+    NexusReaderTaxaBlock *taxaBlock;
+    NexusReaderCharactersBlock *characterBlock;
+    bool taxaBlockLoaded = false;
+    bool assumptionsBlockLoaded = false;
+    bool charactersBlockLoaded = false;
+
+    for(int i = 0; i < blocksToLoad.count(); i++)
+    {
+        if(blocksToLoad[i] == "TAXA") {
+            block = taxaBlock = new NexusReaderTaxaBlock();
+            taxaBlockLoaded = true;
+        } else if (blocksToLoad[i] == "CHARACTERS" && taxaBlockLoaded) {
+            block = characterBlock = new NexusReaderCharactersBlock(taxaBlock);
+            charactersBlockLoaded = true;
+        }
+
+        if (block != NULL) {
+            block->setNexusReader(this);
+            if (!blockList) {
+                blockList = block;
+            } else {
+                // Add new block to end of list
+                NexusReaderBlock *current;
+                for (current = blockList; current && current->next;){
+                    current = current->next;
+                }
+                current->next = block;
             }
-            current->next = block;
         }
     }
 }
@@ -155,6 +175,8 @@ bool NexusReader::execute()
     currentBlock = NULL;
     QString errorMessage;
 
+    loadBlocks();
+
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         nexusReaderLogError("Unable to open .nex file in readonly text mode.", 0, 0, 0);
@@ -181,7 +203,7 @@ bool NexusReader::execute()
             return false;
         }
 
-        if (!token->tokenEquals("#NEXUS")) {
+        if (!token->equals("#NEXUS")) {
             errorMessage = "Expecting \"#NEXUS\" to be the first token in the file, but found \"";
             errorMessage += token->getToken();
             errorMessage += "\" instead";
@@ -202,7 +224,7 @@ bool NexusReader::execute()
                 break;
             }
 
-            if (token->tokenEquals("BEGIN")) {             
+            if (token->equals("BEGIN")) {
 
                 token->getNextToken();
                 QString currentBlockName = token->getToken().toUpper();
@@ -211,7 +233,7 @@ bool NexusReader::execute()
                 // Find Block Class to reader BLOCK
                 for (currentBlock = blockList; currentBlock != NULL; currentBlock = currentBlock->next)
                 {
-                    if (token->tokenEquals(currentBlock->getID())){
+                    if (token->equals(currentBlock->getID())){
                         break;
                     }
                 }
@@ -256,10 +278,10 @@ bool NexusReader::execute()
                     }
                 }
                 currentBlock = NULL;
-            } else if (token->tokenEquals("&SHOWALL")) {
+            } else if (token->equals("&SHOWALL")) {
                 // Used for debugging block...
 
-            } else if (token->tokenEquals("&LEAVE")) {
+            } else if (token->equals("&LEAVE")) {
                 break;
             }
             qApp->processEvents();
@@ -314,10 +336,10 @@ bool NexusReader::readUntilEndblock(NexusReaderToken *token, QString currentBloc
     for (;;)
     {
         token->getNextToken();
-        if (token->tokenEquals("END") || token->tokenEquals("ENDBLOCK")){
+        if (token->equals("END") || token->equals("ENDBLOCK")){
             nexusReaderLogMesssage(QString("found \"END\" or \"ENDBLOCK\" for BLOCK called \"%1\" on line %2.").arg(currentBlockName).arg(token->getFileLine()));
             token->getNextToken();
-            if (!token->tokenEquals(";")){
+            if (!token->equals(";")){
                 QString errorMessage = QString("Expecting ';' after END or ENDBLOCK command, but found \"%1\" instead").arg(token->getToken());
                 nexusReaderLogError(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                 return false;

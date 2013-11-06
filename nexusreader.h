@@ -108,6 +108,9 @@ private:
     NexusReaderBlockIDToBlockList blockIDToBlockList;
     void addBlockToUsedBlockList(const QString &, NexusReaderBlock *);
     int removeBlockFromUsedBlockList(NexusReaderBlock *);
+
+    void loadBlocks();
+    QList<QString> blocksToLoad;
 };
 
 #endif // NEXUSREADER_H

@@ -57,12 +57,14 @@ public:
     virtual QMap<QString,QVariant> getData();
     virtual void reset();
 
+    int getNTAX();
+
 protected:
     virtual void read(NexusReaderToken *&token);
+    int handleDimensions(NexusReaderToken *&token, QString ntaxLabel);
 
-    int taxaNumber; // == ntax, number of taxa found
+    int ntax; // == ntax, number of taxa found
     QList<QVariant> taxonLabels; // storage for list of taxon labels
-    QList<bool> needsQuotes; // needsQuotes[i] true if label i needs to be quoted when output
 };
 
 #endif // NEXUSREADERTAXABLOCK_H

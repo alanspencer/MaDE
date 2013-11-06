@@ -80,15 +80,15 @@ QMap<QString, QVariant> NexusReaderBlock::getData()
 // to tell the caller whether the command was recognized.
 NexusReaderBlock::NexusCommandResult NexusReaderBlock::handleBasicBlockCommands(NexusReaderToken *&token)
 {
-    if (token->tokenEquals("TITLE")){
+    if (token->equals("TITLE")){
         handleTitleCommand(token);
         return NexusReaderBlock::NexusCommandResult(HANDLED_COMMAND);
     }
-    if (token->tokenEquals("BLOCKID")){
+    if (token->equals("BLOCKID")){
         handleBlockIDCommand(token);
         return NexusReaderBlock::NexusCommandResult(HANDLED_COMMAND);
     }
-    if (token->tokenEquals("END") || token->tokenEquals("ENDBLOCK")){
+    if (token->equals("END") || token->equals("ENDBLOCK")){
         handleEndblock(token);
         return NexusReaderBlock::NexusCommandResult(STOP_PARSING_BLOCK);
     }
@@ -99,7 +99,7 @@ NexusReaderBlock::NexusCommandResult NexusReaderBlock::handleBasicBlockCommands(
 void NexusReaderBlock::handleTitleCommand(NexusReaderToken *&token)
     {
     token->getNextToken();
-    if (token->tokenEquals(";")) {
+    if (token->equals(";")) {
         generateUnexpectedTokenException(token, "a title for the block");
     }
     title = token->getToken();
@@ -110,7 +110,7 @@ void NexusReaderBlock::handleTitleCommand(NexusReaderToken *&token)
 void NexusReaderBlock::handleBlockIDCommand(NexusReaderToken *&token)
 {
     token->getNextToken();
-    if (token->tokenEquals(";")) {
+    if (token->equals(";")) {
         generateUnexpectedTokenException(token, "an id for the block");
     }
     blockIDString = token->getToken();
@@ -210,7 +210,7 @@ void NexusReaderBlock::skippingCommand(QString){}
 void NexusReaderBlock::requireEqualsToken(NexusReaderToken *&token, QString contextString)
 {
     token->getNextToken();
-    if (!token->tokenEquals("=")){
+    if (!token->equals("=")){
         errorMessage = "Expecting '=' ";
         if (!contextString.isEmpty()) {
             errorMessage.append(contextString);
@@ -226,7 +226,7 @@ void NexusReaderBlock::requireEqualsToken(NexusReaderToken *&token, QString cont
 void NexusReaderBlock::requireSemicolonToken(NexusReaderToken *&token, QString contextString)
 {
     token->getNextToken();
-    if (!token->tokenEquals(";")) {
+    if (!token->equals(";")) {
         errorMessage = "Expecting ';' to terminate the ";
         errorMessage.append(contextString);
         errorMessage += " command, but found ";

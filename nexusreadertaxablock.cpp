@@ -41,7 +41,7 @@
 
 NexusReaderTaxaBlock::NexusReaderTaxaBlock()
 {
-    taxaNumber = 0;
+    ntax = 0;
     blockID = "TAXA";
 }
 
@@ -55,7 +55,7 @@ NexusReaderTaxaBlock::~NexusReaderTaxaBlock()
 // virtual function in the base class.
 void NexusReaderTaxaBlock::read(NexusReaderToken *&token)
 {
-    taxaNumber = 0;
+    ntax = 0;
     int nominalTaxaNumber = 0;
     isEmpty = false;
 
@@ -70,21 +70,9 @@ void NexusReaderTaxaBlock::read(NexusReaderToken *&token)
             return;
         }
         if (result != NexusReaderBlock::NexusCommandResult(HANDLED_COMMAND)){
-            if (token->tokenEquals("DIMENSIONS")){
-                nexusReader->nexusReaderLogMesssage(QString("TAXA Block: found command \"DIMENSIONS\" on line %1, now looking for \"NTAX\"...").arg(token->getFileLine()));
-                // This should be NTAX keyword
-                token->getNextToken();
-                if (!token->tokenEquals("NTAX")){
-                    errorMessage = "Expecting NTAX keyword, but found ";
-                    errorMessage += token->getToken();
-                    errorMessage += " instead";
-                    throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
-                }
-                requireEqualsToken(token, "after NTAX");
-                nominalTaxaNumber = requirePositiveToken(token, "NTAX");
-                nexusReader->nexusReaderLogMesssage(QString("TAXA Block: found command \"NTAX\" on line %2. Taxa Number = %1. Now looking for \"TAXLABELS\"...").arg(nominalTaxaNumber).arg(token->getFileLine()));
-                requireSemicolonToken(token, "DIMENSIONS");
-            } else if (token->tokenEquals("TAXLABELS")) {
+            if (token->equals("DIMENSIONS")){
+                nominalTaxaNumber = handleDimensions(token, "NTAX");
+            } else if (token->equals("TAXLABELS")) {
                 if (nominalTaxaNumber <= 0) {
                     throw NexusReaderException("NTAX must be specified before TAXLABELS command", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                 }
@@ -103,7 +91,7 @@ void NexusReaderTaxaBlock::read(NexusReaderToken *&token)
                 skippingCommand(token->getToken());
                 do {
                     token->getNextToken();
-                } while (!token->getAtEndOfFile() && !token->tokenEquals(";"));
+                } while (!token->getAtEndOfFile() && !token->equals(";"));
 
                 if (token->getAtEndOfFile()){
                     errorMessage = "Unexpected end of file encountered";
@@ -114,21 +102,58 @@ void NexusReaderTaxaBlock::read(NexusReaderToken *&token)
     }
 }
 
+// Called when DIMENSIONS command needs to be parsed from within the TAXA block. Deals with everything after the token DIMENSIONS up
+// to and including the semicolon that terminates the DIMENSIONs command. `ntaxLabel' is simply "NTAX" for this class, but may be
+// different for derived classes that use `ntax' for other things.
+int NexusReaderTaxaBlock::handleDimensions(NexusReaderToken *&token, QString ntaxLabel)
+{
+    int nominalTaxaNumber = 0;
+    nexusReader->nexusReaderLogMesssage(
+                QString("TAXA Block: found command \"DIMENSIONS\" on line %1, now looking for \"%2\"...")
+                .arg(token->getFileLine())
+                .arg(ntaxLabel)
+                );
+
+    // This should be NTAX keyword
+    token->getNextToken();
+    if (!token->equals(ntaxLabel)){
+        errorMessage = QString("Expecting %1 keyword, but found %2 instead.").arg(ntaxLabel).arg(token->getToken());
+        throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+    }
+    requireEqualsToken(token, QString("after %1").arg(ntaxLabel));
+    nominalTaxaNumber = requirePositiveToken(token, ntaxLabel);
+
+    nexusReader->nexusReaderLogMesssage(
+                QString("TAXA Block: found command \"%3\" on line %2. NTAX = %1. Now looking for \"TAXLABELS\"...")
+                .arg(nominalTaxaNumber)
+                .arg(token->getFileLine())
+                .arg(ntaxLabel)
+                );
+
+    requireSemicolonToken(token, "DIMENSIONS");
+    return nominalTaxaNumber;
+}
+
 // Adds taxon label to end of list of taxon labels and increments ntax by 1. Returns index of taxon label just
 // added.
 int NexusReaderTaxaBlock::addTaxonLabel(QString taxonLabel)
 {
     isEmpty = false;
     taxonLabels.append(taxonLabel);
-    taxaNumber++;
-    return (taxaNumber-1);
+    ntax++;
+    return (ntax-1);
+}
+
+int NexusReaderTaxaBlock::getNTAX()
+{
+    return ntax;
 }
 
 // This virtual function must be overridden for each derived class to provide the ability to return a standard data object.
 QMap<QString, QVariant> NexusReaderTaxaBlock::getData()
 {
-    blockData.insert("ntax", taxaNumber-1);
-    blockData.insert("taxonLabels", taxonLabels);
+    blockData.insert("NTAX", ntax);
+    blockData.insert("TAXLABELS", taxonLabels);
     return blockData;
 }
 
@@ -136,7 +161,6 @@ QMap<QString, QVariant> NexusReaderTaxaBlock::getData()
 void NexusReaderTaxaBlock::reset()
 {
     NexusReaderBlock::reset();
-    taxaNumber = 0;
+    ntax = 0;
     taxonLabels.clear();
-    needsQuotes.clear();
 }
