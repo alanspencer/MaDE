@@ -59,7 +59,7 @@ void NexusReaderTaxaBlock::read(NexusReaderToken *&token)
     int nominalTaxaNumber = 0;
     isEmpty = false;
 
-    requireSemicolonToken(token, "BEGIN TAXA");
+    demandEndSemicolon(token, "BEGIN TAXA");
 
     for (;;)
     {
@@ -86,7 +86,7 @@ void NexusReaderTaxaBlock::read(NexusReaderToken *&token)
                     addTaxonLabel(token->getToken());
                     nexusReader->nexusReaderLogMesssage(QString("TAXA Block: extracted taxon label [T%1] -> %2.").arg(i+1).arg(token->getToken()));
                 }
-                requireSemicolonToken(token, "TAXLABELS");
+                demandEndSemicolon(token, "TAXLABELS");
             } else {
                 skippingCommand(token->getToken());
                 do {
@@ -120,8 +120,8 @@ int NexusReaderTaxaBlock::handleDimensions(NexusReaderToken *&token, QString nta
         errorMessage = QString("Expecting %1 keyword, but found %2 instead.").arg(ntaxLabel).arg(token->getToken());
         throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
     }
-    requireEqualsToken(token, QString("after %1").arg(ntaxLabel));
-    nominalTaxaNumber = requirePositiveToken(token, ntaxLabel);
+    demandEquals(token, QString("after %1").arg(ntaxLabel));
+    nominalTaxaNumber = demandPositiveInt(token, ntaxLabel);
 
     nexusReader->nexusReaderLogMesssage(
                 QString("TAXA Block: found command \"%3\" on line %2. NTAX = %1. Now looking for \"TAXLABELS\"...")
@@ -130,7 +130,7 @@ int NexusReaderTaxaBlock::handleDimensions(NexusReaderToken *&token, QString nta
                 .arg(ntaxLabel)
                 );
 
-    requireSemicolonToken(token, "DIMENSIONS");
+    demandEndSemicolon(token, "DIMENSIONS");
     return nominalTaxaNumber;
 }
 

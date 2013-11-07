@@ -88,9 +88,9 @@ protected:
     NexusCommandResult	handleBasicBlockCommands(NexusReaderToken *&token);
     void generateUnexpectedTokenException(NexusReaderToken *&token, QString expected = NULL);
 
-    void requireEqualsToken(NexusReaderToken *&token, QString contextString);
-    void requireSemicolonToken(NexusReaderToken *&token, QString contextString);
-    int requirePositiveToken(NexusReaderToken *&token, QString contextString);
+    void demandEquals(NexusReaderToken *&token, QString contextString);
+    void demandEndSemicolon(NexusReaderToken *&token, QString contextString);
+    int demandPositiveInt(NexusReaderToken *&token, QString contextString);
 
     NexusReader *nexusReader;
     QString blockID;

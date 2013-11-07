@@ -103,7 +103,7 @@ void NexusReaderBlock::handleTitleCommand(NexusReaderToken *&token)
         generateUnexpectedTokenException(token, "a title for the block");
     }
     title = token->getToken();
-    requireSemicolonToken(token, "TITLE");
+    demandEndSemicolon(token, "TITLE");
 }
 
 // Stores the next token as the this->blockid field.
@@ -114,14 +114,14 @@ void NexusReaderBlock::handleBlockIDCommand(NexusReaderToken *&token)
         generateUnexpectedTokenException(token, "an id for the block");
     }
     blockIDString = token->getToken();
-    requireSemicolonToken(token, "BLOCKID");
+    demandEndSemicolon(token, "BLOCKID");
 }
 
 // Called when the END or ENDBLOCK command needs to be parsed from within a block.
 // Basically just checks to make sure the next token in the data file is a semicolon.
 void NexusReaderBlock::handleEndblock(NexusReaderToken *&token)
 {
-    requireSemicolonToken(token, "END or ENDBLOCK");
+    demandEndSemicolon(token, "END or ENDBLOCK");
 }
 
 // throws a NexusReaderException with the token info for `token`
@@ -207,7 +207,7 @@ void NexusReaderBlock::skippingCommand(QString){}
 
 // Advances the token, and raise an exception if it is not an equals sign. Sets errormsg and raises a
 // NexusReaderException on failure.
-void NexusReaderBlock::requireEqualsToken(NexusReaderToken *&token, QString contextString)
+void NexusReaderBlock::demandEquals(NexusReaderToken *&token, QString contextString)
 {
     token->getNextToken();
     if (!token->equals("=")){
@@ -223,7 +223,7 @@ void NexusReaderBlock::requireEqualsToken(NexusReaderToken *&token, QString cont
 }
 
 // Advances the token, and raise an exception if it is not a semicolon sign.
-void NexusReaderBlock::requireSemicolonToken(NexusReaderToken *&token, QString contextString)
+void NexusReaderBlock::demandEndSemicolon(NexusReaderToken *&token, QString contextString)
 {
     token->getNextToken();
     if (!token->equals(";")) {
@@ -237,7 +237,7 @@ void NexusReaderBlock::requireSemicolonToken(NexusReaderToken *&token, QString c
 }
 
 // Advances the token, and raise an exception if it is not a semicolon sign.
-int NexusReaderBlock::requirePositiveToken(NexusReaderToken *&token, QString contextString)
+int NexusReaderBlock::demandPositiveInt(NexusReaderToken *&token, QString contextString)
 {
     token->getNextToken();
     int i = token->getToken().toInt();

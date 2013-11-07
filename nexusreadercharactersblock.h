@@ -98,13 +98,18 @@ protected:
 
     QChar missing;              // missing data symbol
     QChar gap;                  // gap symbol for use with molecular data
-    QChar match;                // match symbol to use in matrix
+    QChar matchchar;                // match symbol to use in matrix
 
     bool    tokens;             // if false, data matrix entries must be single symbols; if true, multicharacter entries are allows
     bool    respectingCase;     // if true, RESPECTCASE keyword specified in FORMAT command
+    bool    labels;             // indicates whether or not labels will appear on left side of matrix
+    bool    transposing;		// indicates matrix will be in transposed format
+    bool    interleaving;		// indicates matrix will be in interleaved format
 
     QList<QChar> symbols;       // list of valid character state symbols
     QList<QString> items;
+
+    QMap<QString, QString> equates; // map of symbols to equates (i.e. A = {BCD})
 
 private:
     dataTypesEnum       datatype;			// flag variable (see datatypes enum)
