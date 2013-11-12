@@ -37,25 +37,23 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "nexusreaderexception.h"
+#ifndef NXSEXCEPTION_H
+#define NXSEXCEPTION_H
 
-NexusReaderException::NexusReaderException(QString str, qint64 fPos, qint64 fLine, qint64 fCol)
+#include "nxs.h"
+
+class NxsToken;
+
+class NxsException
 {
-    filePos = fPos;
-    fileLine = fLine;
-    fileCol = fCol;
-    msg = str;
-}
+    public:
+        NxsException(QString s, qint64 fPos = Q_INT64_C(0), qint64 fLine = Q_INT64_C(0), qint64 fCol = Q_INT64_C(0));
+        NxsException(const QString &s, const NxsToken &t);
 
+        QString	msg;	/* NexusString to hold message */
+        qint64 filePos;	/* current file position */
+        qint64 fileLine;	/* current line in file */
+        qint64 fileCol;	/* column of current line */
+};
 
-/*----------------------------------------------------------------------------------------------------------------------
-*	Creates a NexusException object with the specified message, getting file position information from the NexusToken.
-*---------------------------------------------------------------------------------------------------------------------*/
-NexusReaderException::NexusReaderException(const QString &str, const NexusReaderToken &token)
-{
-    msg = str;
-    filePos = token.getFilePosition();
-    fileLine = token.getFileLine();
-    fileCol = token.getFileColumn();
-}
-
+#endif // NXSEXCEPTION_H

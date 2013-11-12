@@ -37,20 +37,20 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NEXUSREADERCHARACTERSBLOCK_H
-#define NEXUSREADERCHARACTERSBLOCK_H
+#ifndef NXSCHARACTERSBLOCK_H
+#define NXSCHARACTERSBLOCK_H
 
 #include <QWidget>
 
-#include "nexusreader.h"
-#include "nexusreadertaxablock.h"
+#include "nxs.h"
+#include "nxstaxablock.h"
 
-class NexusReaderBlock;
-class NexusReaderException;
-class NexusReaderTaxaBlock;
-//class NexusReaderAssumptionsBlock;
+class NxsBlock;
+class NxsException;
+class NxsTaxaBlock;
+//class NxsAssumptionsBlock;
 
-class NexusReaderCharactersBlock : public NexusReaderBlock
+class NxsCharactersBlock : public NxsBlock
 {
 public:
     enum dataTypesEnum		// values used to represent different basic types of data stored in a CHARACTERS block, and used with the data member `datatype'
@@ -71,21 +71,24 @@ public:
         INDIVIDUALS
     };
 
-    NexusReaderCharactersBlock(NexusReaderTaxaBlock *tBlock);
-    virtual ~NexusReaderCharactersBlock();
+    NxsCharactersBlock(NxsTaxaBlock *tBlock);
+    virtual ~NxsCharactersBlock();
 
     virtual QMap<QString,QVariant> getData();
     virtual void reset();
 
 protected:
-    virtual void read(NexusReaderToken *&token);
+    virtual void read(NxsToken *&token);
 
     bool    isInSymbols(QChar ch);
 
-    void    handleDimensions(NexusReaderToken *&token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel);
-    void    handleFormat(NexusReaderToken *&token);
+    void    resetSymbols();
+    QMap<QString, QString> getDefaultEquates();
 
-    NexusReaderTaxaBlock *taxaBlock;    // pointer to the TAXA block in which taxon labels are stored
+    void    handleDimensions(NxsToken *&token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel);
+    void    handleFormat(NxsToken *&token);
+
+    NxsTaxaBlock *taxaBlock;    // pointer to the TAXA block in which taxon labels are stored
 
     int     nchar;              // number of columns in matrix (same as `ncharTotal' unless some characters were eliminated, in which case `ncharTotal' > `nchar')
     int     ncharTotal;         // total number of characters (same as `nchar' unless some characters were eliminated, in which case `ncharTotal' > `nchar')
@@ -116,4 +119,4 @@ private:
     statesFormatEnum    statesFormat;
 };
 
-#endif // NEXUSREADERCHARACTERSBLOCK_H
+#endif // NXSCHARACTERSBLOCK_H

@@ -37,34 +37,78 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NEXUSREADERTAXABLOCK_H
-#define NEXUSREADERTAXABLOCK_H
+#ifndef NXSBLOCK_H
+#define NXSBLOCK_H
 
 #include <QWidget>
 
-#include "nexusreader.h"
+#include "nxs.h"
 
-class NexusReaderBlock;
-class NexusReaderException;
+class Nxs;
+class NxsToken;
+class NxsException;
 
-class NexusReaderTaxaBlock : public NexusReaderBlock
+class NxsBlock
 {
-public:
-    NexusReaderTaxaBlock();
-    virtual ~NexusReaderTaxaBlock();
 
-    virtual int addTaxonLabel(QString taxonLabel);
-    virtual QMap<QString,QVariant> getData();
+public:
+    enum NxsCommandResult
+    {
+        STOP_PARSING_BLOCK,
+        HANDLED_COMMAND,
+        UNKNOWN_COMMAND
+    };
+
+    NxsBlock();
+    virtual ~NxsBlock();
+
+    void setNxs(Nxs *pointer);
+    void setEnabled();
+    void setDisabled();
+
+    QString getID();
+    bool getEnabled();
+    bool getEmpty();
+
+    virtual void skippingCommand(QString commandName);
+
+    virtual void handleBlockIDCommand(NxsToken *&token);
+    virtual void handleEndblock(NxsToken *&token);
+    virtual void handleTitleCommand(NxsToken *&token);
+    virtual void read(NxsToken *&token);
+    virtual QMap<QString, QVariant> getData();
     virtual void reset();
 
-    int getNTAX();
+    QString errorMessage;
+
+    NxsBlock *next;		// field pointer to next block in list
+
 
 protected:
-    virtual void read(NexusReaderToken *&token);
-    int handleDimensions(NexusReaderToken *&token, QString ntaxLabel);
+    NxsCommandResult	handleBasicBlockCommands(NxsToken *&token);
+    void generateUnexpectedTokenException(NxsToken *&token, QString expected = NULL);
 
-    int ntax; // == ntax, number of taxa found
-    QList<QVariant> taxonLabels; // storage for list of taxon labels
+    void demandEquals(NxsToken *&token, QString contextString);
+    void demandEndSemicolon(NxsToken *&token, QString contextString);
+    int demandPositiveInt(NxsToken *&token, QString contextString);
+
+    Nxs *nxs;
+    QString blockID;
+    bool isEmpty;               // true if this object is not storing data
+    bool isEnabled;             // true if this block is currently enabled
+    QString title;              // holds the title of the block empty by default
+    QString blockIDString;      // Mesquite generates these. Don't know what they are for...
+    QMap<QString, QVariant> blockData; // standard data return
 };
 
-#endif // NEXUSREADERTAXABLOCK_H
+
+class NxsBlockFactory
+{
+public:
+    virtual ~NxsBlockFactory(){}
+    virtual NxsBlock  *	getBlockReaderForID(const QString & id, Nxs *) = 0;
+    virtual void blockError(NxsBlock *b){ delete b; }
+    virtual void blockSkipped(NxsBlock *b) { delete b; }
+};
+
+#endif // NXSBLOCK_H

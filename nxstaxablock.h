@@ -37,23 +37,34 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NEXUSREADEREXCEPTION_H
-#define NEXUSREADEREXCEPTION_H
+#ifndef NXSTAXABLOCK_H
+#define NXSTAXABLOCK_H
 
-#include "nexusreader.h"
+#include <QWidget>
 
-class NexusReaderToken;
+#include "nxs.h"
 
-class NexusReaderException
+class NxsBlock;
+class NxsException;
+
+class NxsTaxaBlock : public NxsBlock
 {
-    public:
-        NexusReaderException(QString s, qint64 fPos = Q_INT64_C(0), qint64 fLine = Q_INT64_C(0), qint64 fCol = Q_INT64_C(0));
-        NexusReaderException(const QString &s, const NexusReaderToken &t);
+public:
+    NxsTaxaBlock();
+    virtual ~NxsTaxaBlock();
 
-        QString	msg;	/* NexusString to hold message */
-        qint64 filePos;	/* current file position */
-        qint64 fileLine;	/* current line in file */
-        qint64 fileCol;	/* column of current line */
+    virtual int addTaxonLabel(QString taxonLabel);
+    virtual QMap<QString,QVariant> getData();
+    virtual void reset();
+
+    int getNTAX();
+
+protected:
+    virtual void read(NxsToken *&token);
+    int handleDimensions(NxsToken *&token, QString ntaxLabel);
+
+    int ntax; // == ntax, number of taxa found
+    QList<QVariant> taxonLabels; // storage for list of taxon labels
 };
 
-#endif // NEXUSREADEREXCEPTION_H
+#endif // NXSTAXABLOCK_H

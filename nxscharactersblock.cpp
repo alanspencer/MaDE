@@ -37,9 +37,9 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "nexusreadercharactersblock.h"
+#include "nxscharactersblock.h"
 
-NexusReaderCharactersBlock::NexusReaderCharactersBlock(NexusReaderTaxaBlock *tBlock)
+NxsCharactersBlock::NxsCharactersBlock(NxsTaxaBlock *tBlock)
 {
     Q_ASSERT(tBlock != NULL);
     //assert(aBlock != NULL);
@@ -59,7 +59,7 @@ NexusReaderCharactersBlock::NexusReaderCharactersBlock(NexusReaderTaxaBlock *tBl
     reset();
 }
 
-NexusReaderCharactersBlock::~NexusReaderCharactersBlock()
+NxsCharactersBlock::~NxsCharactersBlock()
 {
     reset();
 
@@ -71,7 +71,7 @@ NexusReaderCharactersBlock::~NexusReaderCharactersBlock()
 // This function provides the ability to read everything following the block name (which is read by the NxsReader
 // object) to the END or ENDBLOCK statement. Characters are read from the input stream `in'. Overrides the abstract
 // virtual function in the base class.
-void NexusReaderCharactersBlock::read(NexusReaderToken *&token)
+void NxsCharactersBlock::read(NxsToken *&token)
 {
     isEmpty = false;
     demandEndSemicolon(token, QString("BEGIN %1").arg(blockID));
@@ -81,11 +81,11 @@ void NexusReaderCharactersBlock::read(NexusReaderToken *&token)
     for(;;)
     {
         token->getNextToken();
-        NexusReaderBlock::NexusCommandResult result = handleBasicBlockCommands(token);
-        if (result == NexusReaderBlock::NexusCommandResult(STOP_PARSING_BLOCK)){
+        NxsBlock::NxsCommandResult result = handleBasicBlockCommands(token);
+        if (result == NxsBlock::NxsCommandResult(STOP_PARSING_BLOCK)){
             return;
         }
-        if (result != NexusReaderBlock::NexusCommandResult(HANDLED_COMMAND)) {
+        if (result != NxsBlock::NxsCommandResult(HANDLED_COMMAND)) {
             if (token->equals("DIMENSIONS")) {
                 handleDimensions(token, "NEWTAXA", "NTAX", "NCHAR");
             } else if (token->equals("FORMAT")) {
@@ -110,7 +110,7 @@ void NexusReaderCharactersBlock::read(NexusReaderToken *&token)
 
                 if (token->getAtEndOfFile()){
                     errorMessage = "Unexpected end of file encountered";
-                    throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                    throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                 }
             }
         }
@@ -122,9 +122,9 @@ void NexusReaderCharactersBlock::read(NexusReaderToken *&token)
 // `ntaxLabel' and `ncharLabel' are simply "NEWTAXA", "NTAX" and "NCHAR" for this class, but may be different for
 // derived classes that use `newtaxa', `ntax' and `nchar' for other things (e.g., ntax is number of populations in
 // an ALLELES block)
-void NexusReaderCharactersBlock::handleDimensions(NexusReaderToken *&token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel)
+void NxsCharactersBlock::handleDimensions(NxsToken *&token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel)
 {
-    nexusReader->nexusReaderLogMesssage(
+    nxs->NxsLogMesssage(
                 QString("%1 BLOCK: found command \"DIMENSIONS\" on line %2, now looking for \"%3\" or \"%4\" or \"%5\"...")
                 .arg(blockID)
                 .arg(token->getFileLine())
@@ -139,7 +139,7 @@ void NexusReaderCharactersBlock::handleDimensions(NexusReaderToken *&token, QStr
         if (token->equals(newtaxaLabel)) {
             newtaxa = true;
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"%2\" on line %3.")
                         .arg(blockID)
                         .arg(newtaxaLabel)
@@ -149,7 +149,7 @@ void NexusReaderCharactersBlock::handleDimensions(NexusReaderToken *&token, QStr
             demandEquals(token, "in DIMENSIONS command");
             ntax = demandPositiveInt(token, ntaxLabel);
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"%2\" on line %3. NTAX = %4.")
                         .arg(blockID)
                         .arg(ntaxLabel)
@@ -168,7 +168,7 @@ void NexusReaderCharactersBlock::handleDimensions(NexusReaderToken *&token, QStr
                     errorMessage += " block must be less than or equal to NTAX in TAXA block\nNote: one circumstance that can cause this error is \nforgetting to specify ";
                     errorMessage += ntaxLabel;
                     errorMessage += " in DIMENSIONS command when \na TAXA block has not been provided";
-                    throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                    throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                 }
             }
         } else if (token->equals(ncharLabel)){
@@ -176,7 +176,7 @@ void NexusReaderCharactersBlock::handleDimensions(NexusReaderToken *&token, QStr
             nchar = demandPositiveInt(token, ncharLabel);
             ncharTotal = nchar;
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"%2\" on line %3. NCHAR = %4.")
                         .arg(blockID)
                         .arg(ncharLabel)
@@ -195,9 +195,9 @@ void NexusReaderCharactersBlock::handleDimensions(NexusReaderToken *&token, QStr
 
 // Called when FORMAT command needs to be parsed from within the CHARACTERS block. Deals with everything after the
 // token FORMAT up to and including the semicolon that terminates the FORMAT command.
-void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
+void NxsCharactersBlock::handleFormat(NxsToken *&token)
 {
-    nexusReader->nexusReaderLogMesssage(
+    nxs->NxsLogMesssage(
                 QString("%1 BLOCK: found command \"FORMAT\" on line %2...")
                 .arg(blockID)
                 .arg(token->getFileLine())
@@ -235,10 +235,10 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                 errorMessage += " is not a valid DATATYPE within a ";
                 errorMessage += blockID;
                 errorMessage += " block";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"DATATYPE\" on line %2. DATATYPE = %3.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -246,10 +246,10 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                         );
 
             if (standardDataTypeAssumed && datatype != standard) {
-                throw NexusReaderException("DATATYPE must be specified first in FORMAT command", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException("DATATYPE must be specified first in FORMAT command", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
 
-            //resetSymbols();
+            resetSymbols();
 
             if (datatype == continuous) {
                 tokens = true;
@@ -257,10 +257,10 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
 
         } else if (token->equals("RESPECTCASE")) {
             if (ignoreCaseAssumed) {
-                throw NexusReaderException("RESPECTCASE must be specified before MISSING, GAP, SYMBOLS, and MATCHCHAR in FORMAT command", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException("RESPECTCASE must be specified before MISSING, GAP, SYMBOLS, and MATCHCHAR in FORMAT command", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"RESPECTCASE\" on line %2.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -278,22 +278,22 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                 errorMessage = "MISSING symbol should be a single character, but ";
                 errorMessage += token->getToken();
                 errorMessage += " was specified";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             } else if (token->isPunctuationToken() && !token->isPlusMinusToken()){
                 errorMessage = "MISSING symbol specified cannot be a punctuation token (";
                 errorMessage += token->getToken();
                 errorMessage += " was specified)";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             } else if (token->isWhitespaceToken()) {
                 errorMessage = "MISSING symbol specified cannot be a whitespace character (";
                 errorMessage += token->getToken();
                 errorMessage += " was specified)";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
 
             missing = token->getToken().at(0);
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"MISSING\" on line %2. MISSING = %3.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -312,22 +312,22 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                 errorMessage = "GAP symbol should be a single character, but ";
                 errorMessage += token->getToken();
                 errorMessage += " was specified";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             } else if (token->isPunctuationToken() && !token->isPlusMinusToken()) {
                 errorMessage = "GAP symbol specified cannot be a punctuation token (";
                 errorMessage += token->getToken();
                 errorMessage += " was specified)";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }  else if (token->isWhitespaceToken()) {
                 errorMessage = "GAP symbol specified cannot be a whitespace character (";
                 errorMessage += token->getToken();
                 errorMessage += " was specified)";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
 
             gap = token->getToken().at(0);
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"GAP\" on line %2. GAP = %3.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -337,36 +337,36 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
             ignoreCaseAssumed = true;
             standardDataTypeAssumed = true;
         } else if (token->equals("SYMBOLS")) {
-            if (datatype == NexusReaderCharactersBlock::continuous) {
-                throw NexusReaderException("SYMBOLS subcommand not allowed for DATATYPE=CONTINUOUS", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+            if (datatype == NxsCharactersBlock::continuous) {
+                throw NxsException("SYMBOLS subcommand not allowed for DATATYPE=CONTINUOUS", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
 
             int numDefStates;
             int maxNewStates;
             switch(datatype){
-                case NexusReaderCharactersBlock::dna:
-                case NexusReaderCharactersBlock::rna:
-                case NexusReaderCharactersBlock::nucleotide:
+                case NxsCharactersBlock::dna:
+                case NxsCharactersBlock::rna:
+                case NxsCharactersBlock::nucleotide:
                     numDefStates = 4;
-                    maxNewStates = NEXUS_MAX_STATES-4;
+                    maxNewStates = NXS_MAX_STATES-4;
                     break;
 
-                case NexusReaderCharactersBlock::protein:
+                case NxsCharactersBlock::protein:
                     numDefStates = 21;
-                    maxNewStates = NEXUS_MAX_STATES-21;
+                    maxNewStates = NXS_MAX_STATES-21;
                     break;
 
                 default:
                     numDefStates = 0;
                     symbols.clear();
-                    maxNewStates = NEXUS_MAX_STATES;
+                    maxNewStates = NXS_MAX_STATES;
                     break;
             }
 
             demandEquals(token, " after keyword SYMBOLS");
 
             // This should be the symbols list
-            token->setLabileFlagBit(NexusReaderToken::doubleQuotedToken);
+            token->setLabileFlagBit(NxsToken::doubleQuotedToken);
             token->getNextToken();
             token->stripWhitespace();
 
@@ -378,7 +378,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                 errorMessage += " new states but only ";
                 errorMessage += maxNewStates;
                 errorMessage += " new states allowed for this DATATYPE";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
 
             QString t = token->getToken();
@@ -391,7 +391,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                     errorMessage = "The character ";
                     errorMessage += t[i];
                     errorMessage += " defined in SYMBOLS has already been predefined for this DATATYPE";
-                    throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                    throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                 }
             }
 
@@ -403,7 +403,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                 symbolsString.append(t.at(i));
             }
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"SYMBOLS\" on line %2. SYMBOLS = %3.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -414,8 +414,8 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
             standardDataTypeAssumed = true;
         } else if (token->equals("EQUATE")) {
 
-            if (datatype == NexusReaderCharactersBlock::continuous) {
-                throw NexusReaderException("EQUATE subcommand not allowed for DATATYPE=CONTINUOUS", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+            if (datatype == NxsCharactersBlock::continuous) {
+                throw NxsException("EQUATE subcommand not allowed for DATATYPE=CONTINUOUS", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
 
             demandEquals(token, "after keyword EQUATE");
@@ -427,7 +427,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                 errorMessage = "Expecting '\"' after keyword EQUATE but found ";
                 errorMessage += token->getToken();
                 errorMessage += " instead";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
 
             // Loop until second double-quote character is encountered
@@ -445,7 +445,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                     errorMessage = "Expecting single-character EQUATE symbol but found ";
                     errorMessage += token->getToken();
                     errorMessage += " instead";
-                    throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                    throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                 }
 
                 // Check for bad choice of equate symbol
@@ -477,15 +477,15 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                     errorMessage = "EQUATE symbol specified (";
                     errorMessage += token->getToken();
                     errorMessage += ") is not valid; must not be same as missing, matchchar, gap, state symbols, or any of the following: ()[]{}/\\,;:=*'\"`<>^";
-                    throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                    throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                 }
 
                 QString t1 = token->getToken();
                 demandEquals(token, " in EQUATE definition");
 
                 // This should be the token to be substituted in for the equate symbol
-                token->setLabileFlagBit(NexusReaderToken::parentheticalToken);
-                token->setLabileFlagBit(NexusReaderToken::curlyBracketedToken);
+                token->setLabileFlagBit(NxsToken::parentheticalToken);
+                token->setLabileFlagBit(NxsToken::curlyBracketedToken);
                 token->getNextToken();
                 QString t2 = token->getToken();
 
@@ -493,7 +493,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                 equates[t1] = t2;
             }
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"EQUATE\" on line %2.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -510,22 +510,22 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                 errorMessage = "MATCHCHAR symbol should be a single character, but ";
                 errorMessage += token->getToken();
                 errorMessage += " was specified";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             } else if (token->isPunctuationToken() && !token->isPlusMinusToken()){
                 errorMessage = "MATCHCHAR symbol specified cannot be a punctuation token (";
                 errorMessage += token->getToken();
                 errorMessage += " was specified) ";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             } else if (token->isWhitespaceToken()){
                 errorMessage = "MATCHCHAR symbol specified cannot be a whitespace character (";
                 errorMessage += token->getToken();
                 errorMessage += " was specified)";
-                throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
 
             matchchar = token->getToken().at(0);
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"MATCHCHAR\" on line %2. MATCHCHAR = %3.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -537,7 +537,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
         } else if (token->equals("LABELS")) {
             labels = true;
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"LABELS\" on line %2.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -547,7 +547,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
         } else if (token->equals("NOLABELS")) {
             labels = false;
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"NOLABELS\" on line %2.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -557,7 +557,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
         } else if (token->equals("TRANSPOSE")) {
             transposing = true;
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"TRANSPOSE\" on line %2.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -567,7 +567,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
         } else if (token->equals("INTERLEAVE")) {
             interleaving = true;
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"INTERLEAVE\" on line %2.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -580,7 +580,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
 
             // This should be STATES (no other item is supported at this time)
             token->getNextToken();
-            if (datatype == NexusReaderCharactersBlock::continuous){
+            if (datatype == NxsCharactersBlock::continuous){
                 QString str;
                 if (token->equals("(")){
                     token->getNextToken();
@@ -595,13 +595,13 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
                 }
             } else {
                 if (!token->equals("STATES")) {
-                    throw NexusReaderException("Sorry, only ITEMS=STATES is supported for discrete datatypes at this time", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                    throw NxsException("Sorry, only ITEMS=STATES is supported for discrete datatypes at this time", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                 }
                 items.clear();
                 items.append("STATES");
             }
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"ITEMS\" on line %2.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -617,18 +617,18 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
             if (token->equals("STATESPRESENT")) {
                 statesFormat = STATES_PRESENT;
             } else {
-                if (datatype == NexusReaderCharactersBlock::continuous) {
+                if (datatype == NxsCharactersBlock::continuous) {
                     if (token->equals("INDIVIDUALS")) {
                         statesFormat = INDIVIDUALS;
                     } else {
-                        throw NexusReaderException("Sorry, only STATESFORMAT=STATESPRESENT or STATESFORMAT=INDIVIDUALS are supported for continuous datatypes at this time", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                        throw NxsException("Sorry, only STATESFORMAT=STATESPRESENT or STATESFORMAT=INDIVIDUALS are supported for continuous datatypes at this time", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                     }
                 } else {
-                    throw NexusReaderException("Sorry, only STATESFORMAT=STATESPRESENT supported for discrete datatypes at this time", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                    throw NxsException("Sorry, only STATESFORMAT=STATESPRESENT supported for discrete datatypes at this time", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
                 }
             }
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"STATESFORMAT\" on line %2.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -638,7 +638,7 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
         } else if (token->equals("TOKENS")) {
             tokens = true;
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"TOKENS\" on line %2.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -646,12 +646,12 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
 
             standardDataTypeAssumed = true;
         } else if (token->equals("NOTOKENS")) {
-            if (datatype == NexusReaderCharactersBlock::continuous) {
-                throw NexusReaderException("NOTOKENS is not allowed for the CONTINUOUS datatype", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+            if (datatype == NxsCharactersBlock::continuous) {
+                throw NxsException("NOTOKENS is not allowed for the CONTINUOUS datatype", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
             }
             tokens = false;
 
-            nexusReader->nexusReaderLogMesssage(
+            nxs->NxsLogMesssage(
                         QString("%1 BLOCK: found subcommand \"NOTOKENS\" on line %2.")
                         .arg(blockID)
                         .arg(token->getFileLine())
@@ -665,30 +665,30 @@ void NexusReaderCharactersBlock::handleFormat(NexusReaderToken *&token)
 
     // Perform some last checks before leaving the FORMAT command
     if (!tokens && datatype == continuous) {
-        throw NexusReaderException("TOKENS must be defined for DATATYPE=CONTINUOUS", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+        throw NxsException("TOKENS must be defined for DATATYPE=CONTINUOUS", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
     }
     if (tokens && (datatype == dna || datatype == rna || datatype == nucleotide)) {
-        throw NexusReaderException("TOKENS not allowed for the DATATYPEs DNA, RNA, or NUCLEOTIDE", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+        throw NxsException("TOKENS not allowed for the DATATYPEs DNA, RNA, or NUCLEOTIDE", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
     }
 }
 
 // This virtual function must be overridden for each derived class to provide the ability to return a standard data object.
-QMap<QString, QVariant> NexusReaderCharactersBlock::getData()
+QMap<QString, QVariant> NxsCharactersBlock::getData()
 {
     blockData.insert("NCHAR", nchar);
     return blockData;
 }
 
 // Flushes taxonLabels and sets taxaNumber to 0 in preparation for reading a new TAXA block.
-void NexusReaderCharactersBlock::reset()
+void NxsCharactersBlock::reset()
 {
-    NexusReaderBlock::reset();
+    NxsBlock::reset();
     nchar = 0;
 }
 
 // Returns true if `ch' can be found in the `symbols' list. The value of `respectingCase' is used to determine
 // whether or not the search should be case sensitive. Assumes `symbols' is non-NULL.
-bool NexusReaderCharactersBlock::isInSymbols(QChar ch)
+bool NxsCharactersBlock::isInSymbols(QChar ch)
 {
     ch = respectingCase ?  ch : ch.toUpper();
     bool found = false;
@@ -707,3 +707,43 @@ bool NexusReaderCharactersBlock::isInSymbols(QChar ch)
     return found;
 }
 
+// Resets standard symbol set after a change in `datatype' is made. Also flushes equates list and installs standard
+// equate macros for the current `datatype'.
+void NxsCharactersBlock::resetSymbols()
+{
+    symbols.clear();
+
+    switch(datatype)
+    {
+        case NxsCharactersBlock::dna:
+            //strcpy(symbols, "ACGT");
+            break;
+
+        case NxsCharactersBlock::rna:
+            //strcpy(symbols, "ACGU");
+            break;
+
+        case NxsCharactersBlock::nucleotide:
+            //strcpy(symbols, "ACGT");
+            break;
+
+        case NxsCharactersBlock::protein:
+            //strcpy(symbols, "ACDEFGHIKLMNPQRSTVWY*");
+            break;
+
+        default:
+            //strcpy(symbols, "01");
+            break;
+    }
+
+    equates.clear();
+
+}
+
+QMap<QString, QString> NxsCharactersBlock::getDefaultEquates()
+{
+    QMap<QString, QString> equatesMap;
+
+
+    return equatesMap;
+}

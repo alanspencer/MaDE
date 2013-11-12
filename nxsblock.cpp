@@ -37,12 +37,12 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "nexusreaderblock.h"
+#include "nxsblock.h"
 
-NexusReaderBlock::NexusReaderBlock()
+NxsBlock::NxsBlock()
 {
     next = NULL;
-    nexusReader = NULL;
+    nxs = NULL;
     isEmpty = true;
     isEnabled = true;
     blockID.clear();
@@ -52,23 +52,23 @@ NexusReaderBlock::NexusReaderBlock()
 }
 
 // Nothing to be done.
-NexusReaderBlock::~NexusReaderBlock()
+NxsBlock::~NxsBlock()
 {
 
 }
 
 // This virtual function must be overridden for each derived class to provide the ability to read everything following
-// the block name (which is read by the NexusReader object) to the end or endblock statement. Characters are read from
-// the input stream 'in'. Note that to get output comments displayed, you must derive a class from NexusReaderToken,
+// the block name (which is read by the Nxs object) to the end or endblock statement. Characters are read from
+// the input stream 'in'. Note that to get output comments displayed, you must derive a class from NxsToken,
 // override the member function OutputComment to display a supplied comment, and then pass a reference to an object of
 // the derived class to this function.
-void NexusReaderBlock::read(NexusReaderToken *&)
+void NxsBlock::read(NxsToken *&)
 {
 
 }
 
 // This virtual function must be overridden for each derived class to provide the ability to return a standard data object.
-QMap<QString, QVariant> NexusReaderBlock::getData()
+QMap<QString, QVariant> NxsBlock::getData()
 {
     return blockData;
 }
@@ -76,27 +76,27 @@ QMap<QString, QVariant> NexusReaderBlock::getData()
 // Hook to consolidate the handling of COMMANDS that are common to all blocks (TITLE, BLOCKID, END, ENDBLOCK -- and,
 // evenually, LINK).
 // HandleXYZ() where XYZ is the command name is then called.
-// Returns NexusCommandResult(HANDLED_COMMAND), NexusCommandResult(HANDLED_COMMAND), or NexusCommandResult(UNKNOWN_COMMAND)
+// Returns NxsCommandResult(HANDLED_COMMAND), NxsCommandResult(HANDLED_COMMAND), or NxsCommandResult(UNKNOWN_COMMAND)
 // to tell the caller whether the command was recognized.
-NexusReaderBlock::NexusCommandResult NexusReaderBlock::handleBasicBlockCommands(NexusReaderToken *&token)
+NxsBlock::NxsCommandResult NxsBlock::handleBasicBlockCommands(NxsToken *&token)
 {
     if (token->equals("TITLE")){
         handleTitleCommand(token);
-        return NexusReaderBlock::NexusCommandResult(HANDLED_COMMAND);
+        return NxsBlock::NxsCommandResult(HANDLED_COMMAND);
     }
     if (token->equals("BLOCKID")){
         handleBlockIDCommand(token);
-        return NexusReaderBlock::NexusCommandResult(HANDLED_COMMAND);
+        return NxsBlock::NxsCommandResult(HANDLED_COMMAND);
     }
     if (token->equals("END") || token->equals("ENDBLOCK")){
         handleEndblock(token);
-        return NexusReaderBlock::NexusCommandResult(STOP_PARSING_BLOCK);
+        return NxsBlock::NxsCommandResult(STOP_PARSING_BLOCK);
     }
-    return NexusReaderBlock::NexusCommandResult(UNKNOWN_COMMAND);
+    return NxsBlock::NxsCommandResult(UNKNOWN_COMMAND);
 }
 
 // Stores the next token as the this->title field.
-void NexusReaderBlock::handleTitleCommand(NexusReaderToken *&token)
+void NxsBlock::handleTitleCommand(NxsToken *&token)
     {
     token->getNextToken();
     if (token->equals(";")) {
@@ -107,7 +107,7 @@ void NexusReaderBlock::handleTitleCommand(NexusReaderToken *&token)
 }
 
 // Stores the next token as the this->blockid field.
-void NexusReaderBlock::handleBlockIDCommand(NexusReaderToken *&token)
+void NxsBlock::handleBlockIDCommand(NxsToken *&token)
 {
     token->getNextToken();
     if (token->equals(";")) {
@@ -119,15 +119,15 @@ void NexusReaderBlock::handleBlockIDCommand(NexusReaderToken *&token)
 
 // Called when the END or ENDBLOCK command needs to be parsed from within a block.
 // Basically just checks to make sure the next token in the data file is a semicolon.
-void NexusReaderBlock::handleEndblock(NexusReaderToken *&token)
+void NxsBlock::handleEndblock(NxsToken *&token)
 {
     demandEndSemicolon(token, "END or ENDBLOCK");
 }
 
-// throws a NexusReaderException with the token info for `token`
+// throws a NxsException with the token info for `token`
 // `expected` should fill in the phrase "Expecting ${expected}, but found..."
 // expected can be NULL. Sets this->errorMessage
-void NexusReaderBlock::generateUnexpectedTokenException(NexusReaderToken *&token, QString expected)
+void NxsBlock::generateUnexpectedTokenException(NxsToken *&token, QString expected)
 {
     errorMessage = "Unexpected token";
     if (!expected.isEmpty()){
@@ -138,61 +138,61 @@ void NexusReaderBlock::generateUnexpectedTokenException(NexusReaderToken *&token
         errorMessage += ": ";
     }
     errorMessage += token->getToken();
-    throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+    throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
 }
 
 
 // Returns the id QString
-QString NexusReaderBlock::getID()
+QString NxsBlock::getID()
 {
     return blockID;
 }
 
-void NexusReaderBlock::setNexusReader(NexusReader *pointer)
+void NxsBlock::setNxs(Nxs *pointer)
 {
-    nexusReader = pointer;
+    nxs = pointer;
 }
 
-// Sets the value of isEnabled to true. A NexusReaderBlock can be disabled (by calling setDisable) if blocks of that type are to
+// Sets the value of isEnabled to true. A NxsBlock can be disabled (by calling setDisable) if blocks of that type are to
 // be skipped during execution of the NEXUS file. If a disabled block is encountered, the virtual
-// NexusReader::skippingDisabledBlock function is called, giving your application the opportunity to inform the user
+// Nxs::skippingDisabledBlock function is called, giving your application the opportunity to inform the user
 // that a block was skipped.
-void NexusReaderBlock::setEnabled()
+void NxsBlock::setEnabled()
 {
     isEnabled = true;
 }
 
-// Sets the value of isEnabled to false. A NexusReaderBlock can be disabled (by calling this method) if blocks of that type
+// Sets the value of isEnabled to false. A NxsBlock can be disabled (by calling this method) if blocks of that type
 // are to be skipped during execution of the NEXUS file. If a disabled block is encountered, the virtual
-// NexusReader::skippingDisabledBlock function is called, giving your application the opportunity to inform the user
+// Nxs::skippingDisabledBlock function is called, giving your application the opportunity to inform the user
 // that a block was skipped.
-void NexusReaderBlock::setDisabled()
+void NxsBlock::setDisabled()
 {
     isEnabled = false;
 }
 
 // Returns value of isEnabled, which can be controlled through use of the Enable and Disable member functions. A
-// NexusReaderBlock should be disabled if blocks of that type are to be skipped during execution of the NEXUS file. If a
-// disabled block is encountered, the virtual NexusReader::skippingDisabledBlock function is called, giving your
+// NxsBlock should be disabled if blocks of that type are to be skipped during execution of the NEXUS file. If a
+// disabled block is encountered, the virtual Nxs::skippingDisabledBlock function is called, giving your
 // application the opportunity to inform the user that a block was skipped.
-bool NexusReaderBlock::getEnabled()
+bool NxsBlock::getEnabled()
 {
     return isEnabled;
 }
 
 // Returns true if Read function has not been called since the last Reset. This base class version simply returns the
-// value of the data member isEmpty. If you derive a new block class from NexusReaderBlock, be sure to set isEmpty to true in
+// value of the data member isEmpty. If you derive a new block class from NxsBlock, be sure to set isEmpty to true in
 // your Reset function and isEmpty to false in your Read function.
-bool NexusReaderBlock::getEmpty()
+bool NxsBlock::getEmpty()
 {
     return isEmpty;
 }
 
 
 // This virtual function should be overridden for each derived class to completely reset the block object in
-// preparation for reading in another block of this type. This function is called by the NexusReader object just prior to
+// preparation for reading in another block of this type. This function is called by the Nxs object just prior to
 // calling the block object's Read function.
-void NexusReaderBlock::reset()
+void NxsBlock::reset()
 {
     title = "";
     errorMessage.clear();
@@ -203,11 +203,11 @@ void NexusReaderBlock::reset()
 // This function is called when an unknown command named commandName is about to be skipped. This version of the
 // function does nothing (i.e., no warning is issued that a command was unrecognized). Override this virtual function
 // in a derived class to provide such warnings to the user.
-void NexusReaderBlock::skippingCommand(QString){}
+void NxsBlock::skippingCommand(QString){}
 
 // Advances the token, and raise an exception if it is not an equals sign. Sets errormsg and raises a
-// NexusReaderException on failure.
-void NexusReaderBlock::demandEquals(NexusReaderToken *&token, QString contextString)
+// NxsException on failure.
+void NxsBlock::demandEquals(NxsToken *&token, QString contextString)
 {
     token->getNextToken();
     if (!token->equals("=")){
@@ -218,12 +218,12 @@ void NexusReaderBlock::demandEquals(NexusReaderToken *&token, QString contextStr
         errorMessage += " but found ";
         errorMessage += token->getToken();
         errorMessage += " instead.";
-        throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+        throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
     }
 }
 
 // Advances the token, and raise an exception if it is not a semicolon sign.
-void NexusReaderBlock::demandEndSemicolon(NexusReaderToken *&token, QString contextString)
+void NxsBlock::demandEndSemicolon(NxsToken *&token, QString contextString)
 {
     token->getNextToken();
     if (!token->equals(";")) {
@@ -232,12 +232,12 @@ void NexusReaderBlock::demandEndSemicolon(NexusReaderToken *&token, QString cont
         errorMessage += " command, but found ";
         errorMessage += token->getToken();
         errorMessage += " instead.";
-        throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+        throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
     }
 }
 
 // Advances the token, and raise an exception if it is not a semicolon sign.
-int NexusReaderBlock::demandPositiveInt(NexusReaderToken *&token, QString contextString)
+int NxsBlock::demandPositiveInt(NxsToken *&token, QString contextString)
 {
     token->getNextToken();
     int i = token->getToken().toInt();
@@ -246,7 +246,7 @@ int NexusReaderBlock::demandPositiveInt(NexusReaderToken *&token, QString contex
         errorMessage += " must be a number greater than 0. Found ";
         errorMessage += token->getToken();
         errorMessage += " instead.";
-        throw NexusReaderException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+        throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
     }
     return i;
 }

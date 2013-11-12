@@ -37,15 +37,15 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "nexusreadertoken.h"
+#include "nxstoken.h"
 
 /*----------------------------------------------------------------------------------------------------------------------
-* NexusReaderToken objects are used by NexusReader to extract words (tokens) from a NEXUS data file. NexusToken objects
+* NxsToken objects are used by Nxs to extract words (tokens) from a NEXUS data file. NexusToken objects
 * know to correctly skip NEXUS comments and understand NEXUS punctuation, making reading a NEXUS file as simple as
 * repeatedly calling the getNextToken() function and then interpreting the token returned.
 *----------------------------------------------------------------------------------------------------------------------*/
 
-NexusReaderToken::NexusReaderToken(QString d):nexusData(d)
+NxsToken::NxsToken(QString d):nexusData(d)
 {
     atEndOfFile = false;
     atEndOfLine = false;
@@ -84,7 +84,7 @@ NexusReaderToken::NexusReaderToken(QString d):nexusData(d)
     punctuation.append(QChar('\0'));
 }
 
-void NexusReaderToken::setLabileFlagBit(int bit)
+void NxsToken::setLabileFlagBit(int bit)
 {
     labileFlags |= bit;
 }
@@ -92,33 +92,33 @@ void NexusReaderToken::setLabileFlagBit(int bit)
 /*------------------------------------------------------------------------------------/
  * Return functions
  *-----------------------------------------------------------------------------------*/
-qint64 NexusReaderToken::getFileColumn() const
+qint64 NxsToken::getFileColumn() const
 {
     return fileCol;
 }
 
-qint64 NexusReaderToken::getFilePosition() const
+qint64 NxsToken::getFilePosition() const
 {
     return filePos;
 }
 
-qint64 NexusReaderToken::getFileLine() const
+qint64 NxsToken::getFileLine() const
 {
     return fileLine;
 }
 
-bool NexusReaderToken::getAtEndOfFile()
+bool NxsToken::getAtEndOfFile()
 {
     return atEndOfFile;
 }
 
-bool NexusReaderToken::getAtEndOfLine()
+bool NxsToken::getAtEndOfLine()
 {
     return atEndOfLine;
 }
 
 // Returns token in upper case (default), set toUpper to false to keep case
-QString NexusReaderToken::getToken(bool respectCase)
+QString NxsToken::getToken(bool respectCase)
 {
     if (!respectCase) {
         return token.toUpper();
@@ -128,13 +128,13 @@ QString NexusReaderToken::getToken(bool respectCase)
 }
 
 // Returns token.size()
-int NexusReaderToken::getTokenLength()
+int NxsToken::getTokenLength()
 {
     return token.size();
 }
 
 // Returns true if current token is a single character and this character is either '+' or '-'.
-bool NexusReaderToken::isPlusMinusToken()
+bool NxsToken::isPlusMinusToken()
 {
     if (token.size() == 1 && (token[0] == '+' || token[0] == '-')){
         return true;
@@ -145,7 +145,7 @@ bool NexusReaderToken::isPlusMinusToken()
 
 // Returns true if current token is a single character and this character is a punctuation character (as defined in
 // IsPunctuation function).
-bool NexusReaderToken::isPunctuationToken()
+bool NxsToken::isPunctuationToken()
 {
     if (token.size() == 1 && isPunctuation(QChar(token[0]))){
         return true;
@@ -156,7 +156,7 @@ bool NexusReaderToken::isPunctuationToken()
 
 // Returns true if current token is a single character and this character is a whitespace character (as defined in
 // IsWhitespace function).
-bool NexusReaderToken::isWhitespaceToken()
+bool NxsToken::isWhitespaceToken()
 {
     if (token.size() == 1 && isWhitespace(QChar(token[0]))){
         return true;
@@ -166,7 +166,7 @@ bool NexusReaderToken::isWhitespaceToken()
 }
 
 //Strips whitespace from currently-stored token. Removes leading, trailing, and embedded whitespace characters.
-void NexusReaderToken::stripWhitespace()
+void NxsToken::stripWhitespace()
 {
     QString str;
     for (int i = 0; i < token.size(); i++)
@@ -179,7 +179,7 @@ void NexusReaderToken::stripWhitespace()
     token = str;
 }
 
-bool NexusReaderToken::equals(QString str, bool respectCase)
+bool NxsToken::equals(QString str, bool respectCase)
 {
     QString tokenStr = token;
     if (!respectCase) {
@@ -197,12 +197,12 @@ bool NexusReaderToken::equals(QString str, bool respectCase)
 /*------------------------------------------------------------------------------------/
  * Append functions
  *-----------------------------------------------------------------------------------*/
-void NexusReaderToken::appendToToken(QChar ch)
+void NxsToken::appendToToken(QChar ch)
 {
     token.append(ch);
 }
 
-void NexusReaderToken::appendToComment(QChar ch)
+void NxsToken::appendToComment(QChar ch)
 {
     comment.append(ch);
 }
@@ -210,7 +210,7 @@ void NexusReaderToken::appendToComment(QChar ch)
 // This function is called whenever an output comment (i.e., a comment beginning with an exclamation point) is found
 // in the data file. This version of OutputComment does nothing; override this virtual function to display the output
 // comment in the most appropriate way for the platform you are supporting.
-void NexusReaderToken::outputComment(const QString)
+void NxsToken::outputComment(const QString)
 {
 }
 
@@ -226,7 +226,7 @@ void NexusReaderToken::outputComment(const QString)
 *	o in all cases, the variable filePos is updated using a call to the pos function of QTextStream.
 */
 
-QChar NexusReaderToken::getNextChar()
+QChar NxsToken::getNextChar()
 {
     QChar ch, chNext;
 
@@ -274,7 +274,7 @@ QChar NexusReaderToken::getNextChar()
 *	  as the next token
 *	o paired single quotes are automatically converted to single quotes before being stored
 *	o comments are handled automatically (normal comments are treated as whitespace and output comments are passed to
-*	  the function outputComment which does nothing in the NexusReaderToken class but can be overridden in a derived
+*	  the function outputComment which does nothing in the NxsToken class but can be overridden in a derived
 *     class to handle these in an appropriate fashion)
 *	o leading whitespace (including comments) is automatically skipped
 *	o if the end of the file is reached on reading this token, the atEndOfFile flag is set and may be queried using the
@@ -289,7 +289,7 @@ QChar NexusReaderToken::getNextChar()
 *	each application.
 */
 
-void NexusReaderToken::getNextToken()
+void NxsToken::getNextToken()
 {
     resetToken();
 
@@ -376,7 +376,7 @@ void NexusReaderToken::getNextToken()
                     appendToToken(ch);
                 } else {
                     QString errormessage = "Expecting second single quote character";
-                    throw NexusReaderException(errormessage, getFilePosition(), getFileLine(), getFileColumn());
+                    throw NxsException(errormessage, getFilePosition(), getFileLine(), getFileColumn());
                 }
             } else {
                 // Get rest of quoted NEXUS word and break, since we will have eaten one token after calling getQuoted.
@@ -402,7 +402,7 @@ void NexusReaderToken::getNextToken()
     }
 }
 
-void NexusReaderToken::resetToken()
+void NxsToken::resetToken()
 {
     token.clear();
 }
@@ -411,7 +411,7 @@ void NexusReaderToken::resetToken()
  * Character Matching Functions
  *-----------------------------------------------------------------------------------*/
 
-bool NexusReaderToken::searchForCharInList(QList<QChar> searchIn, QChar searchFor)
+bool NxsToken::searchForCharInList(QList<QChar> searchIn, QChar searchFor)
 {
     for (int i = 0; i < searchIn.count(); i++){
         if (searchIn[i] == searchFor) {
@@ -421,7 +421,7 @@ bool NexusReaderToken::searchForCharInList(QList<QChar> searchIn, QChar searchFo
     return false;
 }
 
-bool NexusReaderToken::isWhitespace(QChar ch)
+bool NxsToken::isWhitespace(QChar ch)
 {
     bool isWhitespace = false;
 
@@ -437,7 +437,7 @@ bool NexusReaderToken::isWhitespace(QChar ch)
     return isWhitespace;
 }
 
-bool NexusReaderToken::isPunctuation(QChar ch)
+bool NxsToken::isPunctuation(QChar ch)
 {
     bool isPunctuation = false;
 
@@ -461,14 +461,14 @@ bool NexusReaderToken::isPunctuation(QChar ch)
  *-----------------------------------------------------------------------------------*/
 
 // Returns copy of str but with quoting according to the NEXUS Standard if it needs to be quoted.
-QString NexusReaderToken::escapeString(const QString &str)
+QString NxsToken::escapeString(const QString &str)
 {
     return (needsQuotes(str) ? getQuoted(str) : str);
 }
 
 // Returns copy of s but with quoting according to the NEXUS Standard (single quotes around the token and all internal
 // single quotes replaced with a pair of single quotes.
-QString NexusReaderToken::getQuoted(const QString &str)
+QString NxsToken::getQuoted(const QString &str)
 {
     QString withQuotes;
     withQuotes.reserve(str.length() + 4);
@@ -482,7 +482,7 @@ QString NexusReaderToken::getQuoted(const QString &str)
     return withQuotes;
 }
 
-bool NexusReaderToken::needsQuotes(const QString &str)
+bool NxsToken::needsQuotes(const QString &str)
 {
     for (int i = 0; i > str.length(); i++){
         const QChar &ch = str[i];
@@ -518,7 +518,7 @@ bool NexusReaderToken::needsQuotes(const QString &str)
 // function reads characters until the next single quote is encountered. An exception occurs if two single quotes occur
 // one after the other, in which case the function continues to gather characters until an isolated single quote is
 // found. The tandem quotes are stored as a single quote character in the token NxsString.
-void NexusReaderToken::getQuoted()
+void NxsToken::getQuoted()
 {
     QChar ch;
 
@@ -555,7 +555,7 @@ void NexusReaderToken::getQuoted()
 // an output stream has been attached, writes the output comment to the output stream. Otherwise, output comments are
 // simply ignored like regular comments. If the labileFlag bit saveCommandComments is in effect, the comment (without
 // the square brackets) will be stored in token.
-void NexusReaderToken::getComment()
+void NxsToken::getComment()
 {
     // Set comment level to 1 initially.  Every ']' encountered reduceslevel by one, so that we know we can stop when level becomes 0.
     int level = 1;
@@ -565,7 +565,7 @@ void NexusReaderToken::getComment()
 
     if (atEndOfFile){
         errorMessage = "Unexpected end of file inside comment";
-        throw NexusReaderException(errorMessage, getFilePosition(), getFileLine(), getFileColumn());
+        throw NxsException(errorMessage, getFilePosition(), getFileLine(), getFileColumn());
     }
 
     // See if first character is the output comment symbol ('!') or command comment symbol (&)
@@ -613,7 +613,7 @@ void NexusReaderToken::getComment()
 
 // Reads rest of parenthetical token (starting '(' already input) up to and including the matching ')' character.  All
 // nested parenthetical phrases will be included.
-void NexusReaderToken::getParentheticalToken()
+void NxsToken::getParentheticalToken()
 {
     // Set level to 1 initially.  Every ')' encountered reduces level by one, so that we know we can stop when level becomes 0.
     int level = 1;
@@ -641,7 +641,7 @@ void NexusReaderToken::getParentheticalToken()
 
 // Reads rest of a token surrounded with curly brackets (the starting '{' has already been input) up to and including
 // the matching '}' character. All nested curly-bracketed phrases will be included.
-void NexusReaderToken::getCurlyBracketedToken()
+void NxsToken::getCurlyBracketedToken()
     {
     // Set level to 1 initially.  Every '}' encountered reduceslevel by one, so that we know we can stop when level becomes 0.
     int level = 1;
@@ -674,7 +674,7 @@ void NexusReaderToken::getCurlyBracketedToken()
 // next double-quoted NEXUS word. Tandem single quotes inside a double-quoted NEXUS word are saved as two separate
 // single quote characters; to embed a single quote inside a double-quoted NEXUS word, simply use the single quote by
 // itself (not paired with another tandem single quote).
-void NexusReaderToken::getDoubleQuotedToken()
+void NxsToken::getDoubleQuotedToken()
 {
     QChar ch;
 

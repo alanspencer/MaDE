@@ -656,7 +656,7 @@ void MainWindow::importNexus()
         QString filename = filenames[0];
         if (!filename.isEmpty()) {
             // Attempt to read the NEXUS file
-            NexusReader nexusReader(filename, mainwindow, settings);
+            Nxs nexusReader(filename, mainwindow, settings);
             // Add Block Reader
             nexusReader.addBlock("TAXA");
             //nexusReader.addBlock("ASSUMPTIONS");

@@ -26,7 +26,7 @@
 
 #include "settings.h"
 #include "matrix.h"
-#include "nexusreader.h"
+#include "nxs.h"
 #include "settingsdialog.h"
 
 class Matrix;

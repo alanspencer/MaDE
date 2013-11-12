@@ -36,12 +36,12 @@ SOURCES += main.cpp\
     matrixsettingsdialog.cpp \
     taxadialog.cpp \
     charactersdialog.cpp \
-    nexusreaderexception.cpp \
-    nexusreadertoken.cpp \
-    nexusreader.cpp \
-    nexusreaderblock.cpp \
-    nexusreadertaxablock.cpp \
-    nexusreadercharactersblock.cpp
+    nxsblock.cpp \
+    nxs.cpp \
+    nxstoken.cpp \
+    nxstaxablock.cpp \
+    nxsexception.cpp \
+    nxscharactersblock.cpp
 
 HEADERS  += mainwindow.h \
     settings.h \
@@ -55,12 +55,12 @@ HEADERS  += mainwindow.h \
     matrixsettingsdialog.h \
     taxadialog.h \
     charactersdialog.h \
-    nexusreader.h \
-    nexusreaderexception.h \
-    nexusreadertoken.h \
-    nexusreaderblock.h \
-    nexusreadertaxablock.h \
-    nexusreadercharactersblock.h
+    nxstoken.h \
+    nxstaxablock.h \
+    nxscharactersblock.h \
+    nxsblock.h \
+    nxs.h \
+    nxsexception.h
 
 FORMS    += mainwindow.ui \
     matrixTable.ui \
