@@ -46,6 +46,18 @@ NxsReader::NxsReader(MainWindow *mw, Settings *s)
     blockList = NULL;
     currentBlock = NULL;
 
+    defaultStandardStateSet = settings->getSetting("defaultStandardStateSet").toStringList();           // STANDARD
+    allowedStandardStateSet = settings->getSetting("allowedStandardStateSet").toStringList();           // Allowed STANDARD
+    defaultDNAStateSet = settings->getSetting("defaultDNAStateSet").toStringList();                     // DNA
+    defaultRNAStateSet = settings->getSetting("defaultRNAStateSet").toStringList();                     // RNA
+    defaultNucleotideStateSet = settings->getSetting("defaultNucleotideStateSet").toStringList();       // NUCLEOTIDE
+    defaultProteinStateSet = settings->getSetting("defaultProteinStateSet").toStringList();             // PROTEIN
+
+    defaultDNAEquateStates = settings->getSetting("defaultDNAEquateStates").toStringList();
+    defaultRNAEquateStates = settings->getSetting("defaultRNAEquateStates").toStringList();
+    defaultNucleotideEquateStates = settings->getSetting("defaultNucleotideEquateStates").toStringList();
+    defaultProteinEquateStates = settings->getSetting("defaultProteinEquateStates").toStringList();
+
     NxsLogMesssage(QString("starting NEXUS Class Library."));
 }
 

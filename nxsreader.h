@@ -72,6 +72,18 @@ public:
     MainWindow *mainwindow;
     Settings *settings;
 
+    QStringList defaultStandardStateSet;
+    QStringList allowedStandardStateSet;
+    QStringList defaultDNAStateSet;
+    QStringList defaultRNAStateSet;
+    QStringList defaultNucleotideStateSet;
+    QStringList defaultProteinStateSet;
+
+    QStringList defaultDNAEquateStates;
+    QStringList defaultRNAEquateStates;
+    QStringList defaultNucleotideEquateStates;
+    QStringList defaultProteinEquateStates;
+
     void addBlock(QString blockID);
     QMap<QString, QVariant> getBlockData(QString blockID, int blockKey);
     int getBlockCount(QString blockID);

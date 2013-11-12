@@ -25,31 +25,51 @@ Settings::Settings()
     defaultSettingsList.insert("defaultNumberTaxa","10");
     defaultSettingsList.insert("defaultNumberCharacter","10");
     defaultSettingsList.insert("defaultName","Undefined");
-    defaultSettingsList.insert("defaultUnknownCharacter","?");
+    defaultSettingsList.insert("defaultMissingCharacter","?");
     defaultSettingsList.insert("defaultGapCharacter","-");
     defaultSettingsList.insert("defaultDisallowedCharacters",
                                QStringList() << "(" << ")" << "[" << "]" << "{" << "}" << "/" << "\\" << "," << ";" << ":"
                                << "=" << "*" << "\"" << "'" << "`" << "<" << ">" << "~");
+
     defaultSettingsList.insert("defaultMatrixTypes",QStringList() << "STANDARD" << "DNA" << "RNA" << "NUCLEOTIDE" << "PROTINE");
+
     defaultSettingsList.insert("defaultStandardStateSet",
+                               QStringList() << "0" << "1");
+    defaultSettingsList.insert("allowedStandardStateSet",
                                QStringList() << "0" << "1" << "2" << "3" << "4" << "5" << "6" << "7" << "8" << "9"
                                << "A" << "B" << "C" << "D" << "E" << "F" << "G" << "H" << "I" << "J" << "K" << "L"
                                << "M" << "N" << "O" << "P" << "Q" << "R" << "S" << "T" << "U" << "V" << "W" << "X"
                                << "Y" << "Z");
-
-    //----- Not Currently Used....
     defaultSettingsList.insert("defaultDNAStateSet",QStringList() << "A" << "C" << "G" << "T");
     defaultSettingsList.insert("defaultRNAStateSet",QStringList() << "A" << "C" << "G" << "U");
     defaultSettingsList.insert("defaultNucleotideStateSet",QStringList() << "A" << "C" << "G" << "T");
-    defaultSettingsList.insert("defaultRNAStateSet",
+    defaultSettingsList.insert("defaultProteinStateSet",
                                QStringList() << "A" << "C" << "D" << "E" << "F" << "G" << "H" << "I" << "K" << "L"
                                << "M" << "N" << "P" << "Q" << "R" << "S" << "T" << "V" << "W" << "Y" << "*");
-    defaultSettingsList.insert("defaultRNAStateNames",
+    defaultSettingsList.insert("defaultProteinStateNames",
                                QStringList() << "ala [alanine]" << "cys [cysteien]" << "asp [aspartic acid]" << "glu [glutamic acid]"
                                << "phe [phenylalanine]" << "gly [glycine]" << "his [histidne]" << "ile [isoleucine]" << "lys [lysine]"
                                << "leu [leucine]" << "met [methionine]" << "asn [asparagine]" << "pro [proline]" << "gln [glutamine]"
                                << "[arg arginie]" << "ser [serine]" << "thr [threonine]" << "val [valine]" << "trp [tryptophan]"
                                << "try [tyrosine]" << "stop [chain termination]");
+
+    QStringList defaultDNAEquateStates, defaultRNAEquateStates, defaultNucleotideEquateStates, defaultProteinEquateStates;
+
+    defaultDNAEquateStates << "R = {AG}" << "M = {AC}" << "S = {CG}" << "V = {ACG}";
+    defaultRNAEquateStates = defaultDNAEquateStates;
+
+    defaultDNAEquateStates << "Y = {CT}" << "K = {GT}" << "W = {AT}" << "H = {ACT}" << "B = {CGT}" << "D = {AGT}" << "N = {ACGT}" << "X = {ACGT}";
+
+    defaultNucleotideEquateStates = defaultDNAEquateStates;
+    defaultRNAEquateStates << "Y = {CU}" << "K = {GU}" << "W = {AU}" << "H = {ACU}" << "B = {CGU}" << "D = {AGU}" << "N = {ACGU}" << "X = {ACGU}";
+
+    defaultProteinEquateStates << "B = {DN}" << "Z = {EQ}";
+
+    defaultSettingsList.insert("defaultDNAEquateStates", defaultDNAEquateStates);
+    defaultSettingsList.insert("defaultRNAEquateStates", defaultRNAEquateStates);
+    defaultSettingsList.insert("defaultNucleotideEquateStates", defaultNucleotideEquateStates);
+    defaultSettingsList.insert("defaultProteinEquateStates", defaultProteinEquateStates);
+
     defaultSettingsList.insert("enabledColor",QColor(0,153,0).rgba());
     defaultSettingsList.insert("disabledColor",QColor(153,0,0).rgba());
 }

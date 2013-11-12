@@ -92,8 +92,8 @@ public:
     int getMatrixType();
     QString getMatrixTypeName();
 
-    void setUnknownCharacter(QString character);
-    QString getUnknownCharacter();
+    void setMissingCharacter(QString character);
+    QString getMissingCharacter();
 
     void setGapCharacter(QString character);
     QString getGapCharacter();
@@ -126,7 +126,7 @@ private:
     bool isModified;
     bool isSelected;
     QString currentFile;
-    QString unknownCharacter;
+    QString missingCharacter;
     int numTaxaToAdd;
     int numCharatersToAdd;
     QString matrixName;

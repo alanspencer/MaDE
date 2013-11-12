@@ -716,34 +716,56 @@ void NxsCharactersBlock::resetSymbols()
     switch(datatype)
     {
         case NxsCharactersBlock::dna:
-            //strcpy(symbols, "ACGT");
+            // "ACGT"
+            for(int i = 0; i < nxs->defaultDNAStateSet.count(); i++)
+            {
+                symbols.append(nxs->defaultDNAStateSet.at(i).at(0));
+            }
             break;
 
         case NxsCharactersBlock::rna:
-            //strcpy(symbols, "ACGU");
+            // "ACGU";
+            for(int i = 0; i < nxs->defaultRNAStateSet.count(); i++)
+            {
+                symbols.append(nxs->defaultRNAStateSet.at(i).at(0));
+            }
             break;
 
         case NxsCharactersBlock::nucleotide:
-            //strcpy(symbols, "ACGT");
+            // "ACGT"
+            for(int i = 0; i < nxs->defaultNucleotideStateSet.count(); i++)
+            {
+                symbols.append(nxs->defaultNucleotideStateSet.at(i).at(0));
+            }
             break;
 
         case NxsCharactersBlock::protein:
-            //strcpy(symbols, "ACDEFGHIKLMNPQRSTVWY*");
+            // "ACDEFGHIKLMNPQRSTVWY*"
+            for(int i = 0; i < nxs->defaultProteinStateSet.count(); i++)
+            {
+                symbols.append(nxs->defaultProteinStateSet.at(i).at(0));
+            }
             break;
 
         default:
-            //strcpy(symbols, "01");
+            // "01"
+            for(int i = 0; i < nxs->defaultStandardStateSet.count(); i++)
+            {
+                symbols.append(nxs->defaultStandardStateSet.at(i).at(0));
+            }
             break;
     }
 
     equates.clear();
-
+    getDefaultEquates();
 }
 
 QMap<QString, QString> NxsCharactersBlock::getDefaultEquates()
 {
     QMap<QString, QString> equatesMap;
 
+
+    //....... TO DO .....
 
     return equatesMap;
 }

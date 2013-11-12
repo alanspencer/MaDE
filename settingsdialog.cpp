@@ -56,7 +56,7 @@ void SettingsDialog::actionRestoreDefaults()
 
 void SettingsDialog::actionSave()
 {
-    settings->setSetting("defaultUnknownCharacter",this->unknownCharacterLineEdit->text());
+    settings->setSetting("defaultMissingCharacter",this->unknownCharacterLineEdit->text());
     settings->setSetting("defaultName",this->defaultNameLineEdit->text());
     settings->setSetting("defaultNumberTaxa",this->numberTaxaSpinBox->value());
     settings->setSetting("defaultNumberCharacter",this->numberCharactersSpinBox->value());
@@ -73,7 +73,7 @@ void SettingsDialog::actionClose()
 void SettingsDialog::loadValues()
 {
     // Get values from settings
-    this->unknownCharacterLineEdit->setText(settings->getSetting("defaultUnknownCharacter").toString());
+    this->unknownCharacterLineEdit->setText(settings->getSetting("defaultMissingCharacter").toString());
     this->defaultNameLineEdit->setText(settings->getSetting("defaultName").toString());
     this->numberTaxaSpinBox->setValue(settings->getSetting("defaultNumberTaxa").toInt());
     this->numberCharactersSpinBox->setValue(settings->getSetting("defaultNumberCharacter").toInt());

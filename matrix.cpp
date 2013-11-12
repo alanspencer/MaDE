@@ -41,10 +41,10 @@ Matrix::Matrix()
     previousSelectedCell = currentSelectedCell = new QPair<int,int>(0,0);
     previousSelectedCellColor = QBrush(Qt::transparent);
     currentSelectedCellColor = QBrush(QColor(176,196,222));
-    currentSelectedCellData = unknownCharacter;
+    currentSelectedCellData = missingCharacter;
 
     //---- Get Settings
-    unknownCharacter = settings->getSetting("defaultUnknownCharacter").toString();
+    missingCharacter = settings->getSetting("defaultMissingCharacter").toString();
     gapCharacter = settings->getSetting("defaultGapCharacter").toString();
     numTaxaToAdd = settings->getSetting("defaultNumberTaxa").toInt();
     numCharatersToAdd = settings->getSetting("defaultNumberCharacter").toInt();
@@ -347,7 +347,7 @@ void Matrix::updateRightTableCellChanged(QTableWidgetItem * item)
 
             // Search for a gap or unknown character
             for (int i = 1; i < input.size()-1; ++i) {
-                if(input.at(i) == gapCharacter || input.at(i) == unknownCharacter){
+                if(input.at(i) == gapCharacter || input.at(i) == missingCharacter){
                     mw->logAppend("Matrix Edit","error detected, data reset. Attempt to set a polymorphic or uncertain 'Character State' for the taxon with a 'Gap' and/or 'Unknown' symbol included.");
                     isError = true;
                 }
@@ -561,7 +561,7 @@ void Matrix::insertRowRightTable(int row)
         int characterID = characterList[c].getID();
 
         // Create Cell data
-        cellAdd(taxonID, characterID, unknownCharacter, "");
+        cellAdd(taxonID, characterID, missingCharacter, "");
 
         // Lookup State Data from matrixGrid
         Cell *currentCell = matrixGrid.value(returnLocator(taxonID, characterID));
@@ -662,7 +662,7 @@ void Matrix::insertColumn(int column)
         int taxonID = taxonList[t].getID();
 
         // Create Cell data
-        cellAdd(taxonID, characterID, unknownCharacter, "");
+        cellAdd(taxonID, characterID, missingCharacter, "");
 
         // Lookup State Data from matrixGrid
         Cell *currentCell = matrixGrid.value(returnLocator(taxonID, characterID));
@@ -757,15 +757,15 @@ QString Matrix::getMatrixDescription()
 };
 
 // Undefined Character Functions
-void Matrix::setUnknownCharacter(QString character)
+void Matrix::setMissingCharacter(QString character)
 {
     isModified = true;
-    unknownCharacter = character;
+    missingCharacter = character;
 };
 
-QString Matrix::getUnknownCharacter()
+QString Matrix::getMissingCharacter()
 {
-    return unknownCharacter;
+    return missingCharacter;
 };
 
 // Matrix Type Functions
@@ -893,7 +893,7 @@ void Matrix::newFile()
     // Data Cells
     for (int t=0; t<(numTaxaToAdd); t++) {
         for (int c=0; c<(numCharatersToAdd); c++) {
-            cellAdd(t, c, unknownCharacter, "");
+            cellAdd(t, c, missingCharacter, "");
         }
         totalNumberProcessed++;
         progress->setValue(totalNumberProcessed);
@@ -902,7 +902,7 @@ void Matrix::newFile()
     setupMatrixTable();
 
     mw->logAppend("Matrix",
-                  QString("\""+currentFile+"\" has %1 'Taxa' and %2 'Characters'. States set to unknown ("+unknownCharacter+") symbol.")
+                  QString("\""+currentFile+"\" has %1 'Taxa' and %2 'Characters'. States set to unknown ("+missingCharacter+") symbol.")
                   .arg(taxaCount())
                   .arg(charactersCount()));
 }
@@ -1181,7 +1181,7 @@ bool Matrix::isSymbolAllowed(QString symbol, int characterID)
     {
         allowedSymbols.append(characterList[characterID].stateList[i].getSymbol());
     }
-    allowedSymbols.append(unknownCharacter);
+    allowedSymbols.append(missingCharacter);
     allowedSymbols.append(gapCharacter);
 
     bool isAllowed = false;

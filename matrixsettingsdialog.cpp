@@ -61,7 +61,7 @@ void MatrixSettingsDialog::actionSave()
 {
     // Save value to matrix
     matrix->setMatrixName(this->matrixNameLineEdit->text());
-    matrix->setUnknownCharacter(this->unknownCharacterLineEdit->text());
+    matrix->setMissingCharacter(this->unknownCharacterLineEdit->text());
     matrix->setMatrixDescription(this->matrixDescriptionTextEdit->toHtml());
     mw->updateInformationDock();
     actionClose();
@@ -77,7 +77,7 @@ void MatrixSettingsDialog::loadValues()
 {
     // Get values from matrix
     this->matrixNameLineEdit->setText(matrix->getMatrixName());
-    this->unknownCharacterLineEdit->setText(matrix->getUnknownCharacter());
+    this->unknownCharacterLineEdit->setText(matrix->getMissingCharacter());
     this->matrixDescriptionTextEdit->setHtml(matrix->getMatrixDescription());
 }
 

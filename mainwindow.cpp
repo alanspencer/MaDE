@@ -238,7 +238,7 @@ void MainWindow::updateInformationDock()
     ui->charactersNumberText->setText(QString("%1").arg(characterNumber));
     ui->gapCharacterText->setText(QString("%1").arg(activeMatrix->getGapCharacter()));
     ui->taxaNumberText->setText(QString("%1").arg(taxaNumber));
-    ui->unknownCharacterText->setText(activeMatrix->getUnknownCharacter());
+    ui->unknownCharacterText->setText(activeMatrix->getMissingCharacter());
 
     ui->editMatrixSettingsToolButton->setEnabled(true);
 }
@@ -541,7 +541,7 @@ void MainWindow::updateDataDock()
         }
     }
 
-    symbol = activeMatrix->getUnknownCharacter();
+    symbol = activeMatrix->getMissingCharacter();
     if (activeMatrix->isSymbolSelected(symbol,taxonID,characterID)) {
         QTableWidgetItem *newItem = new QTableWidgetItem(tr("%1").arg(symbol));
         newItem->setFont(selectedFont);
