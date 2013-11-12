@@ -40,11 +40,6 @@
 #ifndef NXSCHARACTERSBLOCK_H
 #define NXSCHARACTERSBLOCK_H
 
-#include <QWidget>
-
-#include "nxs.h"
-#include "nxstaxablock.h"
-
 class NxsBlock;
 class NxsException;
 class NxsTaxaBlock;
@@ -78,15 +73,15 @@ public:
     virtual void reset();
 
 protected:
-    virtual void read(NxsToken *&token);
+    virtual void read(NxsToken &token);
 
     bool    isInSymbols(QChar ch);
 
     void    resetSymbols();
     QMap<QString, QString> getDefaultEquates();
 
-    void    handleDimensions(NxsToken *&token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel);
-    void    handleFormat(NxsToken *&token);
+    void    handleDimensions(NxsToken &token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel);
+    void    handleFormat(NxsToken &token);
 
     NxsTaxaBlock *taxaBlock;    // pointer to the TAXA block in which taxon labels are stored
 

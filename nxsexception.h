@@ -40,8 +40,6 @@
 #ifndef NXSEXCEPTION_H
 #define NXSEXCEPTION_H
 
-#include "nxs.h"
-
 class NxsToken;
 
 class NxsException

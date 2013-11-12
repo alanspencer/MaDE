@@ -37,30 +37,71 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NXSTAXABLOCK_H
-#define NXSTAXABLOCK_H
+#ifndef NXSREADER_H
+#define NXSREADER_H
 
+/*------------------------------------------------------------------------------------/
+ * Single load point for all NEXUS parsing
+ *
+ * Set all variables needed for all other classes/headers, then include classes/headers
+ *-----------------------------------------------------------------------------------*/
+
+// Maximum number of states that can be stored; the only limitation is that this
+// number be less than the maximum size of an int (not likely to be a problem).
+// A good number for this is 76, which is 96 (the number of distinct symbols
+// able to be input from a standard keyboard) less 20 (the number of symbols
+// symbols disallowed by the NEXUS standard for use as state symbols)
+#define NXS_MAX_STATES 76
+
+#include <mainwindow.h>
+#include <settings.h>
+
+class NxsToken;
+class NxsBlockFactory;
 class NxsBlock;
 class NxsException;
 
-class NxsTaxaBlock : public NxsBlock
+typedef QList<NxsBlock *> NxsBlockList;
+typedef QMap<QString, NxsBlockList> NxsBlockIDToBlockList;
+
+class NxsReader
 {
 public:
-    NxsTaxaBlock();
-    virtual ~NxsTaxaBlock();
+    NxsReader(MainWindow *mw, Settings *s);
 
-    virtual int addTaxonLabel(QString taxonLabel);
-    virtual QMap<QString,QVariant> getData();
-    virtual void reset();
+    MainWindow *mainwindow;
+    Settings *settings;
 
-    int getNTAX();
+    void addBlock(QString blockID);
+    QMap<QString, QVariant> getBlockData(QString blockID, int blockKey);
+    int getBlockCount(QString blockID);
+    bool execute(NxsToken &token);
+
+    bool enteringBlock(QString currentBlockName);
+    void exitingBlock(QString currentBlockName);
+    void postBlockReadingHook(NxsBlock *block);
+    void skippingBlock(QString currentBlockName);
+    void skippingDisabledBlock(QString currentBlockName);
+
+    void NxsLogError(QString message, qint64 filePos, qint64	fileLine, qint64 fileCol);
+    void NxsLogMesssage(QString message);
+
+    NxsBlockIDToBlockList getUsedBlocks();
 
 protected:
-    virtual void read(NxsToken &token);
-    int handleDimensions(NxsToken &token, QString ntaxLabel);
+    NxsBlock *currentBlock;	/* pointer to current block in list of blocks */
+    NxsBlock *blockList;
 
-    int ntax; // == ntax, number of taxa found
-    QList<QVariant> taxonLabels; // storage for list of taxon labels
+
+private:
+    bool readUntilEndblock(NxsToken token, QString currentBlockName);
+
+    NxsBlockIDToBlockList blockIDToBlockList;
+    void addBlockToUsedBlockList(const QString &, NxsBlock *);
+    int removeBlockFromUsedBlockList(NxsBlock *);
+
+    void loadBlocks();
+    QList<QString> blocksToLoad;
 };
 
-#endif // NXSTAXABLOCK_H
+#endif // NXSREADER_H

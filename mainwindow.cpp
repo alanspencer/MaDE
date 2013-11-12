@@ -655,39 +655,51 @@ void MainWindow::importNexus()
         QStringList filenames = dialog.selectedFiles();
         QString filename = filenames[0];
         if (!filename.isEmpty()) {
-            // Attempt to read the NEXUS file
-            Nxs nexusReader(filename, mainwindow, settings);
-            // Add Block Reader
-            nexusReader.addBlock("TAXA");
-            //nexusReader.addBlock("ASSUMPTIONS");
-            nexusReader.addBlock("CHARACTERS");
-            //nexusReader.addBlock("NOTES");
-
-            if(nexusReader.execute()) {
-                // Create New Matrix from data
-                if (nexusReader.getBlockCount("TAXA") != 0) {
-                    QMap<QString, QVariant> taxaData = nexusReader.getBlockData("TAXA", 0);
-
-                    // Available data keys: "NTAX"; "TAXLABELS".
-                    int ntax = taxaData.value("NTAX").toInt();
-                    QList<QVariant> taxonLabels = taxaData.value("TAXLABELS").toList();
-
-                    qDebug() << "ntax =" << ntax;
-                    for(int i = 0; i < taxonLabels.count(); i++){
-                        qDebug() << "T" << i << "=" << taxonLabels[i].toString();
-                    }
-                }
-                if (nexusReader.getBlockCount("CHARACTERS") != 0) {
-                    QMap<QString, QVariant> charactersData = nexusReader.getBlockData("CHARACTERS", 0);
-
-                    // Available data keys: "NCHAR".
-                    int nchar = charactersData.value("NCHAR").toInt();
-
-                    qDebug() << "nchar =" << nchar;
-                }
-
+            QFile file(filename);
+            if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                logAppend("Action","Unable to open .nex file in readonly text mode.");
             } else {
-                logAppend("Action","import NEXUS file aborted by NEXUS Reader.");
+                QTextStream iStream(&file);
+
+                // New nexusReader(mainwindow, settings)
+                NxsReader nexusReader(mainwindow, settings);
+
+                // New NxsToken token(QTextStream);
+                NxsToken token(iStream);
+
+                // Add Block Reader
+                nexusReader.addBlock("TAXA");
+                //nexusReader.addBlock("ASSUMPTIONS");
+                nexusReader.addBlock("CHARACTERS");
+                //nexusReader.addBlock("NOTES");
+
+                if(nexusReader.execute(token)) {
+                    // Create New Matrix from data
+                    if (nexusReader.getBlockCount("TAXA") != 0) {
+                        QMap<QString, QVariant> taxaData = nexusReader.getBlockData("TAXA", 0);
+
+                        // Available data keys: "NTAX"; "TAXLABELS".
+                        int ntax = taxaData.value("NTAX").toInt();
+                        QList<QVariant> taxonLabels = taxaData.value("TAXLABELS").toList();
+
+                        qDebug() << "ntax =" << ntax;
+                        for(int i = 0; i < taxonLabels.count(); i++){
+                            qDebug() << "T" << i << "=" << taxonLabels[i].toString();
+                        }
+                    }
+                    if (nexusReader.getBlockCount("CHARACTERS") != 0) {
+                        QMap<QString, QVariant> charactersData = nexusReader.getBlockData("CHARACTERS", 0);
+
+                        // Available data keys: "NCHAR".
+                        int nchar = charactersData.value("NCHAR").toInt();
+
+                        qDebug() << "nchar =" << nchar;
+                    }
+
+                } else {
+                    logAppend("Action","import NEXUS file aborted by NEXUS Reader.");
+                }
+            file.close();
             }
         }
     } else {

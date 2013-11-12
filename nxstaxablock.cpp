@@ -37,7 +37,7 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "nxstaxablock.h"
+#include "ncl.h"
 
 NxsTaxaBlock::NxsTaxaBlock()
 {
@@ -53,7 +53,7 @@ NxsTaxaBlock::~NxsTaxaBlock()
 // This function provides the ability to read everything following the block name (which is read by the Nxs
 // object) to the end or endblock statement. Characters are read from the input stream in. Overrides the abstract
 // virtual function in the base class.
-void NxsTaxaBlock::read(NxsToken *&token)
+void NxsTaxaBlock::read(NxsToken &token)
 {
     ntax = 0;
     int nominalTaxaNumber = 0;
@@ -63,39 +63,39 @@ void NxsTaxaBlock::read(NxsToken *&token)
 
     for (;;)
     {
-        token->getNextToken();
+        token.getNextToken();
         NxsBlock::NxsCommandResult result = handleBasicBlockCommands(token);
 
         if (result == NxsBlock::NxsCommandResult(STOP_PARSING_BLOCK)){
             return;
         }
         if (result != NxsBlock::NxsCommandResult(HANDLED_COMMAND)){
-            if (token->equals("DIMENSIONS")){
+            if (token.equals("DIMENSIONS")){
                 nominalTaxaNumber = handleDimensions(token, "NTAX");
-            } else if (token->equals("TAXLABELS")) {
+            } else if (token.equals("TAXLABELS")) {
                 if (nominalTaxaNumber <= 0) {
-                    throw NxsException("NTAX must be specified before TAXLABELS command", token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                    throw NxsException("NTAX must be specified before TAXLABELS command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
                 }
 
-                nxs->NxsLogMesssage(QString("TAXA Block: found command \"TAXLABELS\" on line %1, now extracting taxon labels...").arg(token->getFileLine()));
+                nxs->NxsLogMesssage(QString("TAXA Block: found command \"TAXLABELS\" on line %1, now extracting taxon labels...").arg(token.getFileLine()));
 
                 for (int i = 0; i < nominalTaxaNumber; i++)
                 {
-                    token->getNextToken();
+                    token.getNextToken();
                     // Should check to make sure this is not punctuation
-                    addTaxonLabel(token->getToken());
-                    nxs->NxsLogMesssage(QString("TAXA Block: extracted taxon label [T%1] -> %2.").arg(i+1).arg(token->getToken()));
+                    addTaxonLabel(token.getToken());
+                    nxs->NxsLogMesssage(QString("TAXA Block: extracted taxon label [T%1] -> %2.").arg(i+1).arg(token.getToken()));
                 }
                 demandEndSemicolon(token, "TAXLABELS");
             } else {
-                skippingCommand(token->getToken());
+                skippingCommand(token.getToken());
                 do {
-                    token->getNextToken();
-                } while (!token->getAtEndOfFile() && !token->equals(";"));
+                    token.getNextToken();
+                } while (!token.getAtEndOfFile() && !token.equals(";"));
 
-                if (token->getAtEndOfFile()){
+                if (token.getAtEndOfFile()){
                     errorMessage = "Unexpected end of file encountered";
-                    throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+                    throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
                 }
             }
         }
@@ -105,20 +105,20 @@ void NxsTaxaBlock::read(NxsToken *&token)
 // Called when DIMENSIONS command needs to be parsed from within the TAXA block. Deals with everything after the token DIMENSIONS up
 // to and including the semicolon that terminates the DIMENSIONs command. `ntaxLabel' is simply "NTAX" for this class, but may be
 // different for derived classes that use `ntax' for other things.
-int NxsTaxaBlock::handleDimensions(NxsToken *&token, QString ntaxLabel)
+int NxsTaxaBlock::handleDimensions(NxsToken &token, QString ntaxLabel)
 {
     int nominalTaxaNumber = 0;
     nxs->NxsLogMesssage(
                 QString("TAXA Block: found command \"DIMENSIONS\" on line %1, now looking for \"%2\"...")
-                .arg(token->getFileLine())
+                .arg(token.getFileLine())
                 .arg(ntaxLabel)
                 );
 
     // This should be NTAX keyword
-    token->getNextToken();
-    if (!token->equals(ntaxLabel)){
-        errorMessage = QString("Expecting %1 keyword, but found %2 instead.").arg(ntaxLabel).arg(token->getToken());
-        throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+    token.getNextToken();
+    if (!token.equals(ntaxLabel)){
+        errorMessage = QString("Expecting %1 keyword, but found %2 instead.").arg(ntaxLabel).arg(token.getToken());
+        throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
     }
     demandEquals(token, QString("after %1").arg(ntaxLabel));
     nominalTaxaNumber = demandPositiveInt(token, ntaxLabel);
@@ -126,7 +126,7 @@ int NxsTaxaBlock::handleDimensions(NxsToken *&token, QString ntaxLabel)
     nxs->NxsLogMesssage(
                 QString("TAXA Block: found command \"%3\" on line %2. NTAX = %1. Now looking for \"TAXLABELS\"...")
                 .arg(nominalTaxaNumber)
-                .arg(token->getFileLine())
+                .arg(token.getFileLine())
                 .arg(ntaxLabel)
                 );
 

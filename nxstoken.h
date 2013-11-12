@@ -40,16 +40,12 @@
 #ifndef NXSTOKEN_H
 #define NXSTOKEN_H
 
-#include <QTextStream>
-
-#include "nxs.h"
-
 class NxsException;
 
 class NxsToken
 {
 public:
-    NxsToken(QString d);
+    NxsToken(QTextStream &i);
 
     static  QString escapeString(const QString &);
     static  QString getQuoted(const QString &);
@@ -109,7 +105,10 @@ protected:
     bool    isPunctuation(QChar ch);
 
 private:
+    QString filename;
     QString nexusData;
+
+    QTextStream &in;
 
     bool    searchForCharInList(QList<QChar> searchIn, QChar searchFor);
 

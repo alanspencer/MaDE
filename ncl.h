@@ -37,80 +37,18 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NXS_H
-#define NXS_H
+#ifndef NCL_H
+#define NCL_H
 
 #include <QWidget>
 #include <QFile>
+#include <QTextStream>
 
-/*------------------------------------------------------------------------------------/
- * Single load point for all NEXUS parsing
- *
- * Set all variables needed for all other classes/headers, then include classes/headers
- *-----------------------------------------------------------------------------------*/
-
-// Maximum number of states that can be stored; the only limitation is that this
-// number be less than the maximum size of an int (not likely to be a problem).
-// A good number for this is 76, which is 96 (the number of distinct symbols
-// able to be input from a standard keyboard) less 20 (the number of symbols
-// symbols disallowed by the NEXUS standard for use as state symbols)
-#define NXS_MAX_STATES 76
-
+#include "nxsexception.h"
 #include "nxstoken.h"
 #include "nxsblock.h"
-#include "nxsexception.h"
+#include "nxsreader.h"
+#include "nxstaxablock.h"
+#include "nxscharactersblock.h"
 
-#include <mainwindow.h>
-#include <settings.h>
-
-class NxsToken;
-class NxsBlockFactory;
-class NxsBlock;
-class NxsException;
-
-typedef QList<NxsBlock *> NxsBlockList;
-typedef QMap<QString, NxsBlockList> NxsBlockIDToBlockList;
-
-class Nxs
-{
-public:
-    Nxs(QString filename, MainWindow *mw, Settings *s);
-
-    MainWindow *mainwindow;
-    Settings *settings;
-    QString filename;
-    NxsToken *token;
-
-    void addBlock(QString blockID);
-    QMap<QString, QVariant> getBlockData(QString blockID, int blockKey);
-    int getBlockCount(QString blockID);
-    bool execute();
-
-    bool enteringBlock(QString currentBlockName);
-    void exitingBlock(QString currentBlockName);
-    void postBlockReadingHook(NxsBlock *block);
-    void skippingBlock(QString currentBlockName);
-    void skippingDisabledBlock(QString currentBlockName);
-
-    void NxsLogError(QString message, qint64 filePos, qint64	fileLine, qint64 fileCol);
-    void NxsLogMesssage(QString message);
-
-    NxsBlockIDToBlockList getUsedBlocks();
-
-protected:
-    NxsBlock *currentBlock;	/* pointer to current block in list of blocks */
-    NxsBlock *blockList;
-
-
-private:
-    bool readUntilEndblock(NxsToken *token, QString currentBlockName);
-
-    NxsBlockIDToBlockList blockIDToBlockList;
-    void addBlockToUsedBlockList(const QString &, NxsBlock *);
-    int removeBlockFromUsedBlockList(NxsBlock *);
-
-    void loadBlocks();
-    QList<QString> blocksToLoad;
-};
-
-#endif // NXS_H
+#endif // NCL_H

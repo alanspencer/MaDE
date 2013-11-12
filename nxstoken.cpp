@@ -37,7 +37,7 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "nxstoken.h"
+#include "ncl.h"
 
 /*----------------------------------------------------------------------------------------------------------------------
 * NxsToken objects are used by Nxs to extract words (tokens) from a NEXUS data file. NexusToken objects
@@ -45,8 +45,20 @@
 * repeatedly calling the getNextToken() function and then interpreting the token returned.
 *----------------------------------------------------------------------------------------------------------------------*/
 
-NxsToken::NxsToken(QString d):nexusData(d)
+NxsToken::NxsToken(QTextStream &i) : in(i)
 {
+    /*QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        errorMessage = "Unable to open .nex file in readonly text mode.";
+        throw NxsException(errorMessage, 0, 0, 0);
+    }
+
+    QTextStream in(&file);
+    nexusData = in.readAll();
+    file.close();*/
+
+    nexusData = in.readAll();
+
     atEndOfFile = false;
     atEndOfLine = false;
     fileCol = Q_INT64_C(1);

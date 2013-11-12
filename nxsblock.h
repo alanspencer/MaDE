@@ -40,11 +40,7 @@
 #ifndef NXSBLOCK_H
 #define NXSBLOCK_H
 
-#include <QWidget>
-
-#include "nxs.h"
-
-class Nxs;
+class NxsReader;
 class NxsToken;
 class NxsException;
 
@@ -62,7 +58,7 @@ public:
     NxsBlock();
     virtual ~NxsBlock();
 
-    void setNxs(Nxs *pointer);
+    void setNxsReader(NxsReader *pointer);
     void setEnabled();
     void setDisabled();
 
@@ -72,10 +68,10 @@ public:
 
     virtual void skippingCommand(QString commandName);
 
-    virtual void handleBlockIDCommand(NxsToken *&token);
-    virtual void handleEndblock(NxsToken *&token);
-    virtual void handleTitleCommand(NxsToken *&token);
-    virtual void read(NxsToken *&token);
+    virtual void handleBlockIDCommand(NxsToken &token);
+    virtual void handleEndblock(NxsToken &token);
+    virtual void handleTitleCommand(NxsToken &token);
+    virtual void read(NxsToken &token);
     virtual QMap<QString, QVariant> getData();
     virtual void reset();
 
@@ -85,14 +81,14 @@ public:
 
 
 protected:
-    NxsCommandResult	handleBasicBlockCommands(NxsToken *&token);
-    void generateUnexpectedTokenException(NxsToken *&token, QString expected = NULL);
+    NxsCommandResult	handleBasicBlockCommands(NxsToken &token);
+    void generateUnexpectedTokenException(NxsToken &token, QString expected = NULL);
 
-    void demandEquals(NxsToken *&token, QString contextString);
-    void demandEndSemicolon(NxsToken *&token, QString contextString);
-    int demandPositiveInt(NxsToken *&token, QString contextString);
+    void demandEquals(NxsToken &token, QString contextString);
+    void demandEndSemicolon(NxsToken &token, QString contextString);
+    int demandPositiveInt(NxsToken &token, QString contextString);
 
-    Nxs *nxs;
+    NxsReader *nxs;
     QString blockID;
     bool isEmpty;               // true if this object is not storing data
     bool isEnabled;             // true if this block is currently enabled
@@ -106,7 +102,7 @@ class NxsBlockFactory
 {
 public:
     virtual ~NxsBlockFactory(){}
-    virtual NxsBlock  *	getBlockReaderForID(const QString & id, Nxs *) = 0;
+    virtual NxsBlock  *	getBlockReaderForID(const QString & id, NxsReader *) = 0;
     virtual void blockError(NxsBlock *b){ delete b; }
     virtual void blockSkipped(NxsBlock *b) { delete b; }
 };

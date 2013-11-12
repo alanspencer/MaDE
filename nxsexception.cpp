@@ -37,7 +37,7 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "nxsexception.h"
+#include "ncl.h"
 
 NxsException::NxsException(QString str, qint64 fPos, qint64 fLine, qint64 fCol)
 {

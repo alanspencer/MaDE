@@ -37,7 +37,7 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "nxsblock.h"
+#include "ncl.h"
 
 NxsBlock::NxsBlock()
 {
@@ -62,7 +62,7 @@ NxsBlock::~NxsBlock()
 // the input stream 'in'. Note that to get output comments displayed, you must derive a class from NxsToken,
 // override the member function OutputComment to display a supplied comment, and then pass a reference to an object of
 // the derived class to this function.
-void NxsBlock::read(NxsToken *&)
+void NxsBlock::read(NxsToken &)
 {
 
 }
@@ -78,17 +78,17 @@ QMap<QString, QVariant> NxsBlock::getData()
 // HandleXYZ() where XYZ is the command name is then called.
 // Returns NxsCommandResult(HANDLED_COMMAND), NxsCommandResult(HANDLED_COMMAND), or NxsCommandResult(UNKNOWN_COMMAND)
 // to tell the caller whether the command was recognized.
-NxsBlock::NxsCommandResult NxsBlock::handleBasicBlockCommands(NxsToken *&token)
+NxsBlock::NxsCommandResult NxsBlock::handleBasicBlockCommands(NxsToken &token)
 {
-    if (token->equals("TITLE")){
+    if (token.equals("TITLE")){
         handleTitleCommand(token);
         return NxsBlock::NxsCommandResult(HANDLED_COMMAND);
     }
-    if (token->equals("BLOCKID")){
+    if (token.equals("BLOCKID")){
         handleBlockIDCommand(token);
         return NxsBlock::NxsCommandResult(HANDLED_COMMAND);
     }
-    if (token->equals("END") || token->equals("ENDBLOCK")){
+    if (token.equals("END") || token.equals("ENDBLOCK")){
         handleEndblock(token);
         return NxsBlock::NxsCommandResult(STOP_PARSING_BLOCK);
     }
@@ -96,30 +96,30 @@ NxsBlock::NxsCommandResult NxsBlock::handleBasicBlockCommands(NxsToken *&token)
 }
 
 // Stores the next token as the this->title field.
-void NxsBlock::handleTitleCommand(NxsToken *&token)
+void NxsBlock::handleTitleCommand(NxsToken &token)
     {
-    token->getNextToken();
-    if (token->equals(";")) {
+    token.getNextToken();
+    if (token.equals(";")) {
         generateUnexpectedTokenException(token, "a title for the block");
     }
-    title = token->getToken();
+    title = token.getToken();
     demandEndSemicolon(token, "TITLE");
 }
 
 // Stores the next token as the this->blockid field.
-void NxsBlock::handleBlockIDCommand(NxsToken *&token)
+void NxsBlock::handleBlockIDCommand(NxsToken &token)
 {
-    token->getNextToken();
-    if (token->equals(";")) {
+    token.getNextToken();
+    if (token.equals(";")) {
         generateUnexpectedTokenException(token, "an id for the block");
     }
-    blockIDString = token->getToken();
+    blockIDString = token.getToken();
     demandEndSemicolon(token, "BLOCKID");
 }
 
 // Called when the END or ENDBLOCK command needs to be parsed from within a block.
 // Basically just checks to make sure the next token in the data file is a semicolon.
-void NxsBlock::handleEndblock(NxsToken *&token)
+void NxsBlock::handleEndblock(NxsToken &token)
 {
     demandEndSemicolon(token, "END or ENDBLOCK");
 }
@@ -127,7 +127,7 @@ void NxsBlock::handleEndblock(NxsToken *&token)
 // throws a NxsException with the token info for `token`
 // `expected` should fill in the phrase "Expecting ${expected}, but found..."
 // expected can be NULL. Sets this->errorMessage
-void NxsBlock::generateUnexpectedTokenException(NxsToken *&token, QString expected)
+void NxsBlock::generateUnexpectedTokenException(NxsToken &token, QString expected)
 {
     errorMessage = "Unexpected token";
     if (!expected.isEmpty()){
@@ -137,8 +137,8 @@ void NxsBlock::generateUnexpectedTokenException(NxsToken *&token, QString expect
     } else {
         errorMessage += ": ";
     }
-    errorMessage += token->getToken();
-    throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+    errorMessage += token.getToken();
+    throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
 }
 
 
@@ -148,7 +148,7 @@ QString NxsBlock::getID()
     return blockID;
 }
 
-void NxsBlock::setNxs(Nxs *pointer)
+void NxsBlock::setNxsReader(NxsReader *pointer)
 {
     nxs = pointer;
 }
@@ -207,46 +207,46 @@ void NxsBlock::skippingCommand(QString){}
 
 // Advances the token, and raise an exception if it is not an equals sign. Sets errormsg and raises a
 // NxsException on failure.
-void NxsBlock::demandEquals(NxsToken *&token, QString contextString)
+void NxsBlock::demandEquals(NxsToken &token, QString contextString)
 {
-    token->getNextToken();
-    if (!token->equals("=")){
+    token.getNextToken();
+    if (!token.equals("=")){
         errorMessage = "Expecting '=' ";
         if (!contextString.isEmpty()) {
             errorMessage.append(contextString);
         }
         errorMessage += " but found ";
-        errorMessage += token->getToken();
+        errorMessage += token.getToken();
         errorMessage += " instead.";
-        throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+        throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
     }
 }
 
 // Advances the token, and raise an exception if it is not a semicolon sign.
-void NxsBlock::demandEndSemicolon(NxsToken *&token, QString contextString)
+void NxsBlock::demandEndSemicolon(NxsToken &token, QString contextString)
 {
-    token->getNextToken();
-    if (!token->equals(";")) {
+    token.getNextToken();
+    if (!token.equals(";")) {
         errorMessage = "Expecting ';' to terminate the ";
         errorMessage.append(contextString);
         errorMessage += " command, but found ";
-        errorMessage += token->getToken();
+        errorMessage += token.getToken();
         errorMessage += " instead.";
-        throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+        throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
     }
 }
 
 // Advances the token, and raise an exception if it is not a semicolon sign.
-int NxsBlock::demandPositiveInt(NxsToken *&token, QString contextString)
+int NxsBlock::demandPositiveInt(NxsToken &token, QString contextString)
 {
-    token->getNextToken();
-    int i = token->getToken().toInt();
+    token.getNextToken();
+    int i = token.getToken().toInt();
     if (i <= 0){
         errorMessage.append(contextString);
         errorMessage += " must be a number greater than 0. Found ";
-        errorMessage += token->getToken();
+        errorMessage += token.getToken();
         errorMessage += " instead.";
-        throw NxsException(errorMessage, token->getFilePosition(), token->getFileLine(), token->getFileColumn());
+        throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
     }
     return i;
 }
