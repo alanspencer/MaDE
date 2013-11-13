@@ -27,6 +27,7 @@ Settings::Settings()
     defaultSettingsList.insert("defaultName","Undefined");
     defaultSettingsList.insert("defaultMissingCharacter","?");
     defaultSettingsList.insert("defaultGapCharacter","-");
+    defaultSettingsList.insert("defaultMatchCharacter",".");
     defaultSettingsList.insert("defaultDisallowedCharacters",
                                QStringList() << "(" << ")" << "[" << "]" << "{" << "}" << "/" << "\\" << "," << ";" << ":"
                                << "=" << "*" << "\"" << "'" << "`" << "<" << ">" << "~");

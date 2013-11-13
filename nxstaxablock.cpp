@@ -39,8 +39,9 @@
 
 #include "ncl.h"
 
-NxsTaxaBlock::NxsTaxaBlock()
+NxsTaxaBlock::NxsTaxaBlock(NxsReader *pointer)
 {
+    setNxsReader(pointer);
     ntax = 0;
     blockID = "TAXA";
 }
@@ -144,9 +145,9 @@ int NxsTaxaBlock::addTaxonLabel(QString taxonLabel)
     return (ntax-1);
 }
 
-int NxsTaxaBlock::getNTAX()
+int NxsTaxaBlock::getNumTaxonLabels()
 {
-    return ntax;
+    return taxonLabels.count();
 }
 
 // This virtual function must be overridden for each derived class to provide the ability to return a standard data object.
@@ -163,4 +164,17 @@ void NxsTaxaBlock::reset()
     NxsBlock::reset();
     ntax = 0;
     taxonLabels.clear();
+}
+
+// Returns index of taxon named 'str' in taxonLabels list. If taxon named 'str' cannot be found, or if there are no
+// labels currently stored in the taxonLabels list, throws NxsX_NoSuchTaxon exception.
+int NxsTaxaBlock::findTaxon(const QString &str) const
+{
+    for (int i = 0; i < taxonLabels.count(); ++i)
+    {
+        if (taxonLabels.at(i) == str){
+            return i;
+        }
+    }
+    throw NxsTaxaBlock::NxsX_NoSuchTaxon();
 }

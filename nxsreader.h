@@ -63,6 +63,7 @@ class NxsException;
 
 typedef QList<NxsBlock *> NxsBlockList;
 typedef QMap<QString, NxsBlockList> NxsBlockIDToBlockList;
+typedef QMap<int, int> NxsIntSetMap;
 
 class NxsReader
 {
@@ -83,6 +84,10 @@ public:
     QStringList defaultRNAEquateStates;
     QStringList defaultNucleotideEquateStates;
     QStringList defaultProteinEquateStates;
+
+    QChar defaultGapCharacter;
+    QChar defaultMissingCharacter;
+    QChar defaultMatchCharacter;
 
     void addBlock(QString blockID);
     QMap<QString, QVariant> getBlockData(QString blockID, int blockKey);

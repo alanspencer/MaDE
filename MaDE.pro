@@ -41,7 +41,8 @@ SOURCES += main.cpp\
     nxstaxablock.cpp \
     nxsexception.cpp \
     nxscharactersblock.cpp \
-    nxsreader.cpp
+    nxsreader.cpp \
+    nxssetreader.cpp
 
 HEADERS  += mainwindow.h \
     settings.h \
@@ -61,7 +62,8 @@ HEADERS  += mainwindow.h \
     nxsblock.h \
     nxsexception.h \
     nxsreader.h \
-    ncl.h
+    ncl.h \
+    nxssetreader.h
 
 FORMS    += mainwindow.ui \
     matrixTable.ui \

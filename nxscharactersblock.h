@@ -40,6 +40,9 @@
 #ifndef NXSCHARACTERSBLOCK_H
 #define NXSCHARACTERSBLOCK_H
 
+#include <QtWidgets>
+
+class NxsReader;
 class NxsBlock;
 class NxsException;
 class NxsTaxaBlock;
@@ -66,10 +69,14 @@ public:
         INDIVIDUALS
     };
 
-    NxsCharactersBlock(NxsTaxaBlock *tBlock);
+    NxsCharactersBlock(NxsReader *pointer, NxsTaxaBlock *tBlock);
     virtual ~NxsCharactersBlock();
 
+    bool isEliminated(int origCharIndex);
+
     virtual QMap<QString,QVariant> getData();
+    virtual int charLabelToNumber(QString str);
+    virtual int taxonLabelToNumber(QString str);
     virtual void reset();
 
 protected:
@@ -82,11 +89,16 @@ protected:
 
     void    handleDimensions(NxsToken &token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel);
     void    handleFormat(NxsToken &token);
+    void    handleEliminate(NxsToken &token);
+    void    handleTaxlabels(NxsToken &token);
+
+    void    buildCharPosArray(bool checkEliminated = false);
 
     NxsTaxaBlock *taxaBlock;    // pointer to the TAXA block in which taxon labels are stored
 
     int     nchar;              // number of columns in matrix (same as `ncharTotal' unless some characters were eliminated, in which case `ncharTotal' > `nchar')
     int     ncharTotal;         // total number of characters (same as `nchar' unless some characters were eliminated, in which case `ncharTotal' > `nchar')
+    QStringList charLabels;     // storage for character labels (if provided)
 
     int     ntax;               // number of rows in matrix (same as `ntaxTotal' unless fewer taxa appeared in CHARACTERS MATRIX command than were specified in the TAXA block, in which case `ntaxTotal' > `ntax')
     int     ntaxTotal;          // number of taxa (same as `ntax' unless fewer taxa appeared in CHARACTERS MATRIX command than were specified in the TAXA block, in which case `ntaxTotal' > `ntax')
@@ -96,7 +108,7 @@ protected:
 
     QChar missing;              // missing data symbol
     QChar gap;                  // gap symbol for use with molecular data
-    QChar matchchar;                // match symbol to use in matrix
+    QChar matchchar;            // match symbol to use in matrix
 
     bool    tokens;             // if false, data matrix entries must be single symbols; if true, multicharacter entries are allows
     bool    respectingCase;     // if true, RESPECTCASE keyword specified in FORMAT command
@@ -104,8 +116,17 @@ protected:
     bool    transposing;		// indicates matrix will be in transposed format
     bool    interleaving;		// indicates matrix will be in interleaved format
 
+    NxsIntSetMap eliminated;    // array of (0-offset) character numbers that have been eliminated (will remain empty if no ELIMINATE command encountered)
+    QList<int> charPos;         // maps character numbers in the data file to column numbers in matrix (necessary if some characters have been eliminated)
+    QList<int> taxonPos;        // maps taxon numbers in the data file to row numbers in matrix (necessary if fewer taxa appear in CHARACTERS block MATRIX command than are specified in the TAXA block)
+
+    QMap<int, QStringList> charStates;          // storage for character state labels (if provided)
+
+    bool activeChar;            // `activeChar[i]' true if character `i' not excluded; `i' is in range [0..`nchar')
+    bool activeTaxon;           // `activeTaxon[i]' true if taxon `i' not deleted; `i' is in range [0..`ntax')
+
     QList<QChar> symbols;       // list of valid character state symbols
-    QList<QString> items;
+    QStringList items;
 
     QMap<QString, QString> equates; // map of symbols to equates (i.e. A = {BCD})
 

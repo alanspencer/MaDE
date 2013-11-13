@@ -40,6 +40,8 @@
 #ifndef NXSTOKEN_H
 #define NXSTOKEN_H
 
+#include <QtWidgets>
+
 class NxsException;
 
 class NxsToken
@@ -50,6 +52,7 @@ public:
     static  QString escapeString(const QString &);
     static  QString getQuoted(const QString &);
     static  bool needsQuotes(const QString &);
+    static  int demandPositiveInt(NxsToken &token, QString & errorMessage, QString contextString);
 
     qint64  getFileColumn() const;
     qint64  getFilePosition() const;

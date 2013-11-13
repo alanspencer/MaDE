@@ -48,6 +48,7 @@
 #include "nxstoken.h"
 #include "nxsblock.h"
 #include "nxsreader.h"
+#include "nxssetreader.h"
 #include "nxstaxablock.h"
 #include "nxscharactersblock.h"
 

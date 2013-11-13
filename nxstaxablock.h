@@ -40,27 +40,30 @@
 #ifndef NXSTAXABLOCK_H
 #define NXSTAXABLOCK_H
 
+class NxsReader;
 class NxsBlock;
 class NxsException;
 
 class NxsTaxaBlock : public NxsBlock
 {
 public:
-    NxsTaxaBlock();
+    NxsTaxaBlock(NxsReader *pointer);
     virtual ~NxsTaxaBlock();
 
     virtual int addTaxonLabel(QString taxonLabel);
     virtual QMap<QString,QVariant> getData();
+    int findTaxon(const QString & str) const;
+    int getNumTaxonLabels();
     virtual void reset();
 
-    int getNTAX();
+    class NxsX_NoSuchTaxon {};	// thrown if findTaxon cannot locate a supplied taxon label in the taxonLabels vector
 
 protected:
     virtual void read(NxsToken &token);
     int handleDimensions(NxsToken &token, QString ntaxLabel);
 
     int ntax; // == ntax, number of taxa found
-    QList<QVariant> taxonLabels; // storage for list of taxon labels
+    QStringList taxonLabels; // storage for list of taxon labels
 };
 
 #endif // NXSTAXABLOCK_H

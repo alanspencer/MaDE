@@ -73,6 +73,8 @@ public:
     virtual void handleTitleCommand(NxsToken &token);
     virtual void read(NxsToken &token);
     virtual QMap<QString, QVariant> getData();
+    virtual int charLabelToNumber(QString str);
+    virtual int taxonLabelToNumber(QString str);
     virtual void reset();
 
     QString errorMessage;

@@ -39,22 +39,16 @@
 
 #include "ncl.h"
 
-NxsCharactersBlock::NxsCharactersBlock(NxsTaxaBlock *tBlock)
+NxsCharactersBlock::NxsCharactersBlock(NxsReader *pointer, NxsTaxaBlock *tBlock)
 {
     Q_ASSERT(tBlock != NULL);
     //assert(aBlock != NULL);
 
-    nchar = 0;
+    setNxsReader(pointer);
+
     blockID = "CHARACTERS";
 
     taxaBlock = tBlock;
-
-    //matrix          = NULL;
-    //charPos         = NULL;
-    //taxonPos        = NULL;
-    //activeTaxon     = NULL;
-    //activeChar      = NULL;
-    symbols.clear();
 
     reset();
 }
@@ -68,6 +62,10 @@ NxsCharactersBlock::~NxsCharactersBlock()
     }
 }
 
+/*------------------------------------------------------------------------------------/
+ * Read Function
+ *-----------------------------------------------------------------------------------*/
+
 // This function provides the ability to read everything following the block name (which is read by the NxsReader
 // object) to the END or ENDBLOCK statement. Characters are read from the input stream `in'. Overrides the abstract
 // virtual function in the base class.
@@ -77,7 +75,7 @@ void NxsCharactersBlock::read(NxsToken &token)
     demandEndSemicolon(token, QString("BEGIN %1").arg(blockID));
 
     // Get Taxa Number (nTax)
-    ntax = taxaBlock->getNTAX();
+    ntax = taxaBlock->getNumTaxonLabels();
     for(;;)
     {
         token.getNextToken();
@@ -91,9 +89,9 @@ void NxsCharactersBlock::read(NxsToken &token)
             } else if (token.equals("FORMAT")) {
                 handleFormat(token);
             } else if (token.equals("ELIMINATE")) {
-                //handleEliminate(token);
+                handleEliminate(token);
             } else if (token.equals("TAXLABELS")) {
-                //handleTaxlabels(token);
+                handleTaxlabels(token);
             } else if (token.equals("CHARSTATELABELS")) {
                 //handleCharstatelabels(token);
             } else if (token.equals("CHARLABELS")) {
@@ -116,6 +114,10 @@ void NxsCharactersBlock::read(NxsToken &token)
         }
     }
 }
+
+/*------------------------------------------------------------------------------------/
+ * handleXXXXXX Functions
+ *-----------------------------------------------------------------------------------*/
 
 // Called when DIMENSIONS command needs to be parsed from within the CHARACTERS block. Deals with everything after
 // the token DIMENSIONS up to and including the semicolon that terminates the DIMENSIONs command. `newtaxaLabel',
@@ -160,7 +162,7 @@ void NxsCharactersBlock::handleDimensions(NxsToken &token, QString newtaxaLabel,
             if (newtaxa) {
                 ntaxTotal = ntax;
             } else {
-                ntaxTotal = taxaBlock->getNTAX();
+                ntaxTotal = taxaBlock->getNumTaxonLabels();
                 if (ntaxTotal < ntax){
                     errorMessage = ntaxLabel;
                     errorMessage += " in ";
@@ -189,7 +191,7 @@ void NxsCharactersBlock::handleDimensions(NxsToken &token, QString newtaxaLabel,
     }
 
     if (newtaxa) {
-        //taxa->reset();
+        taxaBlock->reset();
     }
 }
 
@@ -348,18 +350,18 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 case NxsCharactersBlock::rna:
                 case NxsCharactersBlock::nucleotide:
                     numDefStates = 4;
-                    maxNewStates = NXS_MAX_STATES-4;
+                    maxNewStates = NXS_MAX_STATES-numDefStates;
                     break;
 
                 case NxsCharactersBlock::protein:
                     numDefStates = 21;
-                    maxNewStates = NXS_MAX_STATES-21;
+                    maxNewStates = NXS_MAX_STATES-numDefStates;
                     break;
 
                 default:
                     numDefStates = 0;
                     symbols.clear();
-                    maxNewStates = NXS_MAX_STATES;
+                    maxNewStates = NXS_MAX_STATES-numDefStates;
                     break;
             }
 
@@ -672,6 +674,77 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
     }
 }
 
+// Called when ELIMINATE command needs to be parsed from within the CHARACTERS block. Deals with everything after the
+// token ELIMINATE up to and including the semicolon that terminates the ELIMINATE command. Any character numbers
+// or ranges of character numbers specified are stored in the NxsUnsignedSet `eliminated', which remains empty until
+// an ELIMINATE command is processed. Note that like all sets the character ranges are adjusted so that their offset
+// is 0. For example, given "eliminate 4-7;" in the data file, the eliminate array would contain the values 3, 4, 5
+// and 6 (not 4, 5, 6 and 7). It is assumed that the ELIMINATE command comes before character labels and/or character
+// state labels have been specified; an error message is generated if the user attempts to use ELIMINATE after a
+// CHARLABELS, CHARSTATELABELS, or STATELABELS command.
+void NxsCharactersBlock::handleEliminate(NxsToken &token)
+{
+    // Construct an object of type NxsSetReader, then call its run function
+    // to store the set in the eliminated set
+    NxsSetReader setReader(token, ncharTotal, eliminated, *this, NxsSetReader::charset);
+    setReader.run();
+
+    Q_ASSERT(eliminated.count() <= ncharTotal);
+
+    nchar = ncharTotal - eliminated.count();
+
+    if (nchar != ncharTotal && (charLabels.count() > 0 || charStates.count() > 0)) {
+        throw NxsException("The ELIMINATE command must appear before character (or character state) labels are specified", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+    }
+
+    if (!charPos.empty()) {
+        throw NxsException("Only one ELIMINATE command is allowed, and it must appear before the MATRIX command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+    }
+
+    buildCharPosArray(true);
+}
+
+// Called when TAXLABELS command needs to be parsed from within the CHARACTERS block. Deals with everything after the
+// token TAXLABELS up to and including the semicolon that terminates the TAXLABELS command.
+void NxsCharactersBlock::handleTaxlabels(NxsToken &token)
+{
+    if (!newtaxa){
+        errorMessage = "NEWTAXA must have been specified in DIMENSIONS command to use the TAXLABELS command in a ";
+        errorMessage += blockID;
+        errorMessage += " block";
+        throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+    }
+
+    for (;;)
+    {
+        token.getNextToken();
+
+        // Token should either be ';' or the name of a taxon
+        if (token.equals(";")){
+            break;
+        } else {
+            // Check to make sure user is not trying to read in more
+            // taxon labels than there are taxa
+            if (taxaBlock->getNumTaxonLabels() > ntaxTotal){
+                throw NxsException("Number of taxon labels exceeds NTAX specified in DIMENSIONS command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+            }
+            taxaBlock->addTaxonLabel(token.getToken());
+        }
+    }
+
+    // NB: Some may object to setting newtaxa to false here, because then the fact that new taxa were
+    // specified in this CHARACTERS block rather than in a preceding TAXA block is lost. This will only be
+    // important if we wish to recreate the original data file, which I don't anticipate anyone doing with
+    // this code (too difficult to remember all comments, the order of blocks in the file, etc.) - better to
+    // get a copy of the file data from the QString NxsToken::nexusData and output it somewhere.
+    newtaxa = false;
+}
+
+
+/*------------------------------------------------------------------------------------/
+ * Other Functions
+ *-----------------------------------------------------------------------------------*/
+
 // This virtual function must be overridden for each derived class to provide the ability to return a standard data object.
 QMap<QString, QVariant> NxsCharactersBlock::getData()
 {
@@ -683,7 +756,31 @@ QMap<QString, QVariant> NxsCharactersBlock::getData()
 void NxsCharactersBlock::reset()
 {
     NxsBlock::reset();
+
+    ncharTotal = 0;
     nchar = 0;
+    ntaxTotal = 0;
+    ntax = 0;
+    newchar = true;
+    newtaxa = false;
+    interleaving = false;
+    transposing = false;
+    respectingCase = false;
+    labels = true;
+    tokens = false;
+    datatype = NxsCharactersBlock::standard;
+
+    missing = nxs->defaultMissingCharacter;
+    gap = nxs->defaultGapCharacter;
+    matchchar = nxs->defaultMatchCharacter;
+
+    resetSymbols();
+    equates.clear();
+
+    items.clear();
+    items.append("STATES");
+
+    statesFormat = STATES_PRESENT;
 }
 
 // Returns true if `ch' can be found in the `symbols' list. The value of `respectingCase' is used to determine
@@ -763,9 +860,125 @@ void NxsCharactersBlock::resetSymbols()
 QMap<QString, QString> NxsCharactersBlock::getDefaultEquates()
 {
     QMap<QString, QString> equatesMap;
+    QStringList equatesList;
 
+    switch(datatype)
+    {
+        case NxsCharactersBlock::dna:
+            equatesList = nxs->defaultDNAEquateStates;
+            break;
 
-    //....... TO DO .....
+        case NxsCharactersBlock::rna:
+            equatesList = nxs->defaultRNAEquateStates;
+            break;
 
+        case NxsCharactersBlock::nucleotide:
+            equatesList = nxs->defaultNucleotideEquateStates;
+            break;
+
+        case NxsCharactersBlock::protein:
+            equatesList = nxs->defaultProteinEquateStates;
+            break;
+
+        default:
+            return equatesMap;
+            break;
+    }
+
+    // Create equatesMap from equatesList;
+    if (equatesList.count() > 0) {
+        for(int i = 0; i < equatesList.count(); i++)
+        {
+            QRegExp rx("(=)");
+            QStringList pair = equatesList.at(i)
+                    .trimmed()
+                    .replace(" ","")
+                    .split(rx);
+            equatesMap.insert(pair[0],pair[1]);
+        }
+    }
+    if (equatesMap.count() > 0) {
+        // Create lowercase keys of the stored uppercase keys/value pairs
+        QList<QString> keys = equatesMap.keys();
+        for(int i = 0; i < keys.count(); i++) {
+            QString uppercase, lowercase;
+            uppercase = keys.at(i);
+            lowercase = uppercase.toLower();
+            equatesMap.insert(lowercase, equatesMap.value(uppercase));
+        }
+
+    }
     return equatesMap;
+}
+
+// Converts a taxon label to a number corresponding to the taxon's position within the list maintained by the
+// NxsTaxaBlock object. This method overrides the virtual function of the same name in the NxsBlock base class. If
+// `str' is not a valid taxon label, returns the value 0.
+int NxsCharactersBlock::taxonLabelToNumber(QString str)
+{
+    int i;
+    try {
+        i = 1 + taxaBlock->findTaxon(str);
+    } catch(NxsTaxaBlock::NxsX_NoSuchTaxon){
+        i = 0;
+    }
+
+    return i;
+}
+
+// Converts a character label to a 1-offset number corresponding to the character's position within `charLabels'. This
+// method overrides the virtual function of the same name in the NxsBlock base class. If `str' is not a valid character
+// label, returns the value 0.
+int NxsCharactersBlock::charLabelToNumber(QString str)
+{
+    int k = 0;
+    for (int i = 0; i < charLabels.count(); ++i)
+    {
+        if (charLabels.at(i) == str){
+            return i+1;
+        }
+    }
+
+    return k;
+}
+
+// Use to allocate memory for (and initialize) `charPos' array, which keeps track of the original character index in
+// cases where characters have been eliminated. This function is called by handleEliminate in response to encountering
+// an ELIMINATE command in the data file, and this is probably the only place where buildCharPosArray should be called
+// with `checkEliminated' true. buildCharPosArray is also called in handleMatrix, handleCharstatelabels,
+// handleStatelabels, and handleCharlabels.
+void NxsCharactersBlock::buildCharPosArray(bool checkEliminated)
+{
+    charPos.clear();
+
+    int k = 0;
+    for (int j = 0; j < ncharTotal; j++)
+    {
+        if (checkEliminated && isEliminated(j)){
+            charPos[j] = INT_MAX;
+        } else {
+            charPos[j] = k++;
+        }
+    }
+}
+
+// Returns true if character number `origCharIndex' was eliminated, false otherwise. Returns false immediately if
+// `eliminated' set is empty.
+bool NxsCharactersBlock::isEliminated(int origCharIndex)
+{
+    // Note: it is tempting to try to streamline this method by just looking up character j in charPos to see if it
+    // has been eliminated, but this temptation should be resisted because this function is used in setting up
+    // charPos in the first place!
+
+    if (eliminated.empty()){
+        return false;
+    }
+
+    for(int i = 0; i < eliminated.count(); i++)
+    {
+        if (eliminated.contains(origCharIndex)){
+            return true;
+        }
+    }
+    return false;
 }

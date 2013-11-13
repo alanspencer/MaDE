@@ -250,3 +250,21 @@ int NxsBlock::demandPositiveInt(NxsToken &token, QString contextString)
     }
     return i;
 }
+
+// This base class version simply returns 0 but a derived class should override this function if it needs to construct
+// and run a NxsSetReader object to read a set involving characters. The NxsSetReader object may need to use this
+// function to look up a character label encountered in the set. A class that overrides this method should return the
+// character index in the range [1..nchar].
+int NxsBlock::charLabelToNumber(QString)
+{
+    return 0;
+}
+
+// This base class version simply returns 0, but a derived class should override this function if it needs to construct
+// and run a NxsSetReader object to read a set involving taxa. The NxsSetReader object may need to use this function to
+// look up a taxon label encountered in the set. A class that overrides this method should return the taxon index in
+// the range [1..ntax].
+int NxsBlock::taxonLabelToNumber(QString)
+{
+    return 0;
+}

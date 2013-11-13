@@ -46,6 +46,7 @@ NxsReader::NxsReader(MainWindow *mw, Settings *s)
     blockList = NULL;
     currentBlock = NULL;
 
+    // State Sets
     defaultStandardStateSet = settings->getSetting("defaultStandardStateSet").toStringList();           // STANDARD
     allowedStandardStateSet = settings->getSetting("allowedStandardStateSet").toStringList();           // Allowed STANDARD
     defaultDNAStateSet = settings->getSetting("defaultDNAStateSet").toStringList();                     // DNA
@@ -53,10 +54,18 @@ NxsReader::NxsReader(MainWindow *mw, Settings *s)
     defaultNucleotideStateSet = settings->getSetting("defaultNucleotideStateSet").toStringList();       // NUCLEOTIDE
     defaultProteinStateSet = settings->getSetting("defaultProteinStateSet").toStringList();             // PROTEIN
 
-    defaultDNAEquateStates = settings->getSetting("defaultDNAEquateStates").toStringList();
-    defaultRNAEquateStates = settings->getSetting("defaultRNAEquateStates").toStringList();
-    defaultNucleotideEquateStates = settings->getSetting("defaultNucleotideEquateStates").toStringList();
-    defaultProteinEquateStates = settings->getSetting("defaultProteinEquateStates").toStringList();
+    // Equate Lists
+    defaultDNAEquateStates = settings->getSetting("defaultDNAEquateStates").toStringList();                 // DNA
+    defaultRNAEquateStates = settings->getSetting("defaultRNAEquateStates").toStringList();                 // RNA
+    defaultNucleotideEquateStates = settings->getSetting("defaultNucleotideEquateStates").toStringList();   // NUCLEOTIDE
+    defaultProteinEquateStates = settings->getSetting("defaultProteinEquateStates").toStringList();         // PROTEIN
+
+    // Missing/Gap/Match Characters    
+    defaultMissingCharacter = settings->getSetting("defaultMissingCharacter").toString().at(0);
+    defaultGapCharacter = settings->getSetting("defaultGapCharacter").toString().at(0);
+    defaultMatchCharacter = settings->getSetting("defaultMatchCharacter").toString().at(0);
+
+    qDebug() << defaultMissingCharacter << defaultGapCharacter << defaultMatchCharacter;
 
     NxsLogMesssage(QString("starting NEXUS Class Library."));
 }
@@ -82,15 +91,14 @@ void NxsReader::loadBlocks()
     for(int i = 0; i < blocksToLoad.count(); i++)
     {
         if(blocksToLoad[i] == "TAXA") {
-            block = taxaBlock = new NxsTaxaBlock();
+            block = taxaBlock = new NxsTaxaBlock(this);
             taxaBlockLoaded = true;
         } else if (blocksToLoad[i] == "CHARACTERS" && taxaBlockLoaded) {
-            block = characterBlock = new NxsCharactersBlock(taxaBlock);
+            block = characterBlock = new NxsCharactersBlock(this, taxaBlock);
             charactersBlockLoaded = true;
         }
 
         if (block != NULL) {
-            block->setNxsReader(this);
             if (!blockList) {
                 blockList = block;
             } else {

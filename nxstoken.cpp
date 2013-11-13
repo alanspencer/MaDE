@@ -101,6 +101,23 @@ void NxsToken::setLabileFlagBit(int bit)
     labileFlags |= bit;
 }
 
+// Advances the token, and returns the unsigned int that the token represents
+// Sets errormsg and raises a NxsException on failure. `contextString` is used in error messages:
+// "${contextString} must be a number greater than 0"
+int NxsToken::demandPositiveInt(NxsToken &token, QString &errorMessage, QString contextString)
+{
+    token.getNextToken();
+    int i = token.getToken().toInt();
+    if (i <= 0){
+        errorMessage = contextString;
+        errorMessage += " must be a number greater than 0. Found";
+        errorMessage += token.getToken();
+        errorMessage += " instead";
+        throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+    }
+    return i;
+}
+
 /*------------------------------------------------------------------------------------/
  * Return functions
  *-----------------------------------------------------------------------------------*/
