@@ -676,24 +676,10 @@ void MainWindow::importNexus()
                 if(nexusReader.execute(token)) {
                     // Create New Matrix from data
                     if (nexusReader.getBlockCount("TAXA") != 0) {
-                        QMap<QString, QVariant> taxaData = nexusReader.getBlockData("TAXA", 0);
 
-                        // Available data keys: "NTAX"; "TAXLABELS".
-                        int ntax = taxaData.value("NTAX").toInt();
-                        QList<QVariant> taxonLabels = taxaData.value("TAXLABELS").toList();
-
-                        qDebug() << "ntax =" << ntax;
-                        for(int i = 0; i < taxonLabels.count(); i++){
-                            qDebug() << "T" << i << "=" << taxonLabels[i].toString();
-                        }
                     }
                     if (nexusReader.getBlockCount("CHARACTERS") != 0) {
-                        QMap<QString, QVariant> charactersData = nexusReader.getBlockData("CHARACTERS", 0);
 
-                        // Available data keys: "NCHAR".
-                        int nchar = charactersData.value("NCHAR").toInt();
-
-                        qDebug() << "nchar =" << nchar;
                     }
 
                 } else {

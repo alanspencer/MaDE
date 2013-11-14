@@ -41,7 +41,7 @@
 
 // Initializes `max' to maxValue, `settype' to `type', `token' to `t', `block' to `block' and `intSetMap' to `ism',
 // then clears `nxsset'.
-NxsSetReader::NxsSetReader(NxsToken &t, int maxValue, NxsIntSetMap &ism, NxsBlock &b, int type) : token(t), block(b), intSetMap(ism)
+NxsSetReader::NxsSetReader(NxsToken &t, int maxValue, QMap<int, int> &ism, NxsBlock &b, int type) : token(t), block(b), intSetMap(ism)
 {
     max = maxValue;
     settype = type;
@@ -73,21 +73,30 @@ bool NxsSetReader::run()
             // We should not be inside a range when we encounter a hyphenation symbol. The hyphen is what _puts_ us inside a range!
             if (insideRange){
                 block.errorMessage = "The symbol '-' is out of place here.";
-                throw NxsException(block.errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(block.errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
             insideRange = true;
         } else if (token.equals(".")) {
             // We _should_ be inside a range if we encounter a period, as this is a range termination character.
             if (insideRange){
                 block.errorMessage = "The symbol '.' can only be used to specify the end of a range.";
-                throw NxsException(block.errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(block.errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
             rangeEnd = max;
         } else if (token.equals("\\")) {
             // The backslash character is used to specify a modulus to a range, and thus should only be encountered if currently inside a range
             if (insideRange){
                 block.errorMessage = "The symbol '\\' can only be used after the end of a range has been specified";
-                throw NxsException(block.errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(block.errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
             // This should be the modulus value
             modValue = NxsToken::demandPositiveInt(token, block.errorMessage, "The modulus value");
@@ -102,7 +111,10 @@ bool NxsSetReader::run()
 
             if (!ok){
                 block.errorMessage = "Character number out of range (or range incorrectly specified) in set specification";
-                throw NxsException(block.errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(block.errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             // We have actually already read in the next token, so deal with it now so that we don't end up skipping a token
@@ -124,7 +136,10 @@ bool NxsSetReader::run()
 
             if (!ok){
                 block.errorMessage = "Number out of range (or range incorrectly specified) in set specification";
-                throw NxsException(block.errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(block.errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             // We have actually already read in the next token, so deal with it now so that we don't end up skipping a token
@@ -204,7 +219,10 @@ int NxsSetReader::getTokenValue()
         } else if (settype == NxsSetReader::taxset) {
             block.errorMessage += "and not a valid taxon label";
         }
-        throw NxsException(block.errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+        throw NxsException(block.errorMessage,
+                           token.getFilePosition(),
+                           token.getFileLine(),
+                           token.getFileColumn());
     }
 
     return v;

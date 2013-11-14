@@ -45,9 +45,7 @@ NxsCharactersBlock::NxsCharactersBlock(NxsReader *pointer, NxsTaxaBlock *tBlock)
     //assert(aBlock != NULL);
 
     setNxsReader(pointer);
-
     blockID = "CHARACTERS";
-
     taxaBlock = tBlock;
 
     reset();
@@ -60,6 +58,41 @@ NxsCharactersBlock::~NxsCharactersBlock()
     if(symbols.count() > 0) {
         symbols.clear();
     }
+}
+
+// Reset
+void NxsCharactersBlock::reset()
+{
+    NxsBlock::reset();
+
+    ncharTotal = 0;
+    nchar = 0;
+    nextCharacterID = 0;
+    characterList.clear();
+    newchar = true;
+
+    ntaxTotal = 0;
+    ntax = 0;    
+    newtaxa = false;
+
+    interleaving = false;
+    transposing = false;
+    respectingCase = false;
+    labels = true;
+    tokens = false;
+    datatype = NxsCharactersBlock::standard;
+
+    missing = nxs->defaultMissingCharacter;
+    gap = nxs->defaultGapCharacter;
+    matchchar = nxs->defaultMatchCharacter;
+
+    resetSymbols();
+    equates.clear();
+
+    items.clear();
+    items.append("STATES");
+
+    statesFormat = STATES_PRESENT;
 }
 
 /*------------------------------------------------------------------------------------/
@@ -93,13 +126,13 @@ void NxsCharactersBlock::read(NxsToken &token)
             } else if (token.equals("TAXLABELS")) {
                 handleTaxlabels(token);
             } else if (token.equals("CHARSTATELABELS")) {
-                //handleCharstatelabels(token);
+                handleCharstatelabels(token);
             } else if (token.equals("CHARLABELS")) {
-                //handleCharlabels(token);
+                handleCharlabels(token);
             } else if (token.equals("STATELABELS")) {
-                //handleStatelabels(token);
+                handleStatelabels(token);
             } else if (token.equals("MATRIX")) {
-                //handleMatrix(token);
+                handleMatrix(token);
             } else {
                 skippingCommand(token.getToken());
                 do {
@@ -108,7 +141,10 @@ void NxsCharactersBlock::read(NxsToken &token)
 
                 if (token.getAtEndOfFile()){
                     errorMessage = "Unexpected end of file encountered";
-                    throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                    throw NxsException(errorMessage,
+                                       token.getFilePosition(),
+                                       token.getFileLine(),
+                                       token.getFileColumn());
                 }
             }
         }
@@ -170,7 +206,10 @@ void NxsCharactersBlock::handleDimensions(NxsToken &token, QString newtaxaLabel,
                     errorMessage += " block must be less than or equal to NTAX in TAXA block\nNote: one circumstance that can cause this error is \nforgetting to specify ";
                     errorMessage += ntaxLabel;
                     errorMessage += " in DIMENSIONS command when \na TAXA block has not been provided";
-                    throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                    throw NxsException(errorMessage,
+                                       token.getFilePosition(),
+                                       token.getFileLine(),
+                                       token.getFileColumn());
                 }
             }
         } else if (token.equals(ncharLabel)){
@@ -237,7 +276,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage += " is not a valid DATATYPE within a ";
                 errorMessage += blockID;
                 errorMessage += " block";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             nxs->NxsLogMesssage(
@@ -248,7 +290,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                         );
 
             if (standardDataTypeAssumed && datatype != standard) {
-                throw NxsException("DATATYPE must be specified first in FORMAT command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException("DATATYPE must be specified first in FORMAT command",
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             resetSymbols();
@@ -259,7 +304,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 
         } else if (token.equals("RESPECTCASE")) {
             if (ignoreCaseAssumed) {
-                throw NxsException("RESPECTCASE must be specified before MISSING, GAP, SYMBOLS, and MATCHCHAR in FORMAT command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException("RESPECTCASE must be specified before MISSING, GAP, SYMBOLS, and MATCHCHAR in FORMAT command",
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             nxs->NxsLogMesssage(
@@ -280,17 +328,26 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "MISSING symbol should be a single character, but ";
                 errorMessage += token.getToken();
                 errorMessage += " was specified";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             } else if (token.isPunctuationToken() && !token.isPlusMinusToken()){
                 errorMessage = "MISSING symbol specified cannot be a punctuation token (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified)";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             } else if (token.isWhitespaceToken()) {
                 errorMessage = "MISSING symbol specified cannot be a whitespace character (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified)";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             missing = token.getToken().at(0);
@@ -314,17 +371,26 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "GAP symbol should be a single character, but ";
                 errorMessage += token.getToken();
                 errorMessage += " was specified";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             } else if (token.isPunctuationToken() && !token.isPlusMinusToken()) {
                 errorMessage = "GAP symbol specified cannot be a punctuation token (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified)";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }  else if (token.isWhitespaceToken()) {
                 errorMessage = "GAP symbol specified cannot be a whitespace character (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified)";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             gap = token.getToken().at(0);
@@ -340,7 +406,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
             standardDataTypeAssumed = true;
         } else if (token.equals("SYMBOLS")) {
             if (datatype == NxsCharactersBlock::continuous) {
-                throw NxsException("SYMBOLS subcommand not allowed for DATATYPE=CONTINUOUS", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException("SYMBOLS subcommand not allowed for DATATYPE=CONTINUOUS",
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             int numDefStates;
@@ -380,7 +449,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage += " new states but only ";
                 errorMessage += maxNewStates;
                 errorMessage += " new states allowed for this DATATYPE";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             QString t = token.getToken();
@@ -393,7 +465,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                     errorMessage = "The character ";
                     errorMessage += t[i];
                     errorMessage += " defined in SYMBOLS has already been predefined for this DATATYPE";
-                    throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                    throw NxsException(errorMessage,
+                                       token.getFilePosition(),
+                                       token.getFileLine(),
+                                       token.getFileColumn());
                 }
             }
 
@@ -417,7 +492,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
         } else if (token.equals("EQUATE")) {
 
             if (datatype == NxsCharactersBlock::continuous) {
-                throw NxsException("EQUATE subcommand not allowed for DATATYPE=CONTINUOUS", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException("EQUATE subcommand not allowed for DATATYPE=CONTINUOUS",
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             demandEquals(token, "after keyword EQUATE");
@@ -429,7 +507,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "Expecting '\"' after keyword EQUATE but found ";
                 errorMessage += token.getToken();
                 errorMessage += " instead";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             // Loop until second double-quote character is encountered
@@ -447,7 +528,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                     errorMessage = "Expecting single-character EQUATE symbol but found ";
                     errorMessage += token.getToken();
                     errorMessage += " instead";
-                    throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                    throw NxsException(errorMessage,
+                                       token.getFilePosition(),
+                                       token.getFileLine(),
+                                       token.getFileColumn());
                 }
 
                 // Check for bad choice of equate symbol
@@ -479,7 +563,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                     errorMessage = "EQUATE symbol specified (";
                     errorMessage += token.getToken();
                     errorMessage += ") is not valid; must not be same as missing, matchchar, gap, state symbols, or any of the following: ()[]{}/\\,;:=*'\"`<>^";
-                    throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                    throw NxsException(errorMessage,
+                                       token.getFilePosition(),
+                                       token.getFileLine(),
+                                       token.getFileColumn());
                 }
 
                 QString t1 = token.getToken();
@@ -512,17 +599,26 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "MATCHCHAR symbol should be a single character, but ";
                 errorMessage += token.getToken();
                 errorMessage += " was specified";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             } else if (token.isPunctuationToken() && !token.isPlusMinusToken()){
                 errorMessage = "MATCHCHAR symbol specified cannot be a punctuation token (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified) ";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             } else if (token.isWhitespaceToken()){
                 errorMessage = "MATCHCHAR symbol specified cannot be a whitespace character (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified)";
-                throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
 
             matchchar = token.getToken().at(0);
@@ -597,7 +693,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 }
             } else {
                 if (!token.equals("STATES")) {
-                    throw NxsException("Sorry, only ITEMS=STATES is supported for discrete datatypes at this time", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                    throw NxsException("Sorry, only ITEMS=STATES is supported for discrete datatypes at this time",
+                                       token.getFilePosition(),
+                                       token.getFileLine(),
+                                       token.getFileColumn());
                 }
                 items.clear();
                 items.append("STATES");
@@ -623,10 +722,16 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                     if (token.equals("INDIVIDUALS")) {
                         statesFormat = INDIVIDUALS;
                     } else {
-                        throw NxsException("Sorry, only STATESFORMAT=STATESPRESENT or STATESFORMAT=INDIVIDUALS are supported for continuous datatypes at this time", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                        throw NxsException("Sorry, only STATESFORMAT=STATESPRESENT or STATESFORMAT=INDIVIDUALS are supported for continuous datatypes at this time",
+                                           token.getFilePosition(),
+                                           token.getFileLine(),
+                                           token.getFileColumn());
                     }
                 } else {
-                    throw NxsException("Sorry, only STATESFORMAT=STATESPRESENT supported for discrete datatypes at this time", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                    throw NxsException("Sorry, only STATESFORMAT=STATESPRESENT supported for discrete datatypes at this time",
+                                       token.getFilePosition(),
+                                       token.getFileLine(),
+                                       token.getFileColumn());
                 }
             }
 
@@ -649,7 +754,10 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
             standardDataTypeAssumed = true;
         } else if (token.equals("NOTOKENS")) {
             if (datatype == NxsCharactersBlock::continuous) {
-                throw NxsException("NOTOKENS is not allowed for the CONTINUOUS datatype", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException("NOTOKENS is not allowed for the CONTINUOUS datatype",
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
             tokens = false;
 
@@ -667,10 +775,16 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 
     // Perform some last checks before leaving the FORMAT command
     if (!tokens && datatype == continuous) {
-        throw NxsException("TOKENS must be defined for DATATYPE=CONTINUOUS", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+        throw NxsException("TOKENS must be defined for DATATYPE=CONTINUOUS",
+                           token.getFilePosition(),
+                           token.getFileLine(),
+                           token.getFileColumn());
     }
     if (tokens && (datatype == dna || datatype == rna || datatype == nucleotide)) {
-        throw NxsException("TOKENS not allowed for the DATATYPEs DNA, RNA, or NUCLEOTIDE", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+        throw NxsException("TOKENS not allowed for the DATATYPEs DNA, RNA, or NUCLEOTIDE",
+                           token.getFilePosition(),
+                           token.getFileLine(),
+                           token.getFileColumn());
     }
 }
 
@@ -684,6 +798,12 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 // CHARLABELS, CHARSTATELABELS, or STATELABELS command.
 void NxsCharactersBlock::handleEliminate(NxsToken &token)
 {
+    nxs->NxsLogMesssage(
+                QString("%1 BLOCK: found command \"ELIMINATE\" on line %2...")
+                .arg(blockID)
+                .arg(token.getFileLine())
+                );
+
     // Construct an object of type NxsSetReader, then call its run function
     // to store the set in the eliminated set
     NxsSetReader setReader(token, ncharTotal, eliminated, *this, NxsSetReader::charset);
@@ -693,14 +813,15 @@ void NxsCharactersBlock::handleEliminate(NxsToken &token)
 
     nchar = ncharTotal - eliminated.count();
 
-    if (nchar != ncharTotal && (charLabels.count() > 0 || charStates.count() > 0)) {
+    if (nchar != ncharTotal && (characterList.count() > 0)) {
         throw NxsException("The ELIMINATE command must appear before character (or character state) labels are specified", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
     }
 
-    if (!charPos.empty()) {
+    if (!charPos.isEmpty()) {
         throw NxsException("Only one ELIMINATE command is allowed, and it must appear before the MATRIX command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
     }
 
+    // Creates a charPos Map containing all characters (thoses that have been eliminated have a value of INT_MAX)
     buildCharPosArray(true);
 }
 
@@ -708,11 +829,20 @@ void NxsCharactersBlock::handleEliminate(NxsToken &token)
 // token TAXLABELS up to and including the semicolon that terminates the TAXLABELS command.
 void NxsCharactersBlock::handleTaxlabels(NxsToken &token)
 {
+    nxs->NxsLogMesssage(
+                QString("%1 BLOCK: found command \"TAXLABELS\" on line %2...")
+                .arg(blockID)
+                .arg(token.getFileLine())
+                );
+
     if (!newtaxa){
         errorMessage = "NEWTAXA must have been specified in DIMENSIONS command to use the TAXLABELS command in a ";
         errorMessage += blockID;
         errorMessage += " block";
-        throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+        throw NxsException(errorMessage,
+                           token.getFilePosition(),
+                           token.getFileLine(),
+                           token.getFileColumn());
     }
 
     for (;;)
@@ -726,9 +856,13 @@ void NxsCharactersBlock::handleTaxlabels(NxsToken &token)
             // Check to make sure user is not trying to read in more
             // taxon labels than there are taxa
             if (taxaBlock->getNumTaxonLabels() > ntaxTotal){
-                throw NxsException("Number of taxon labels exceeds NTAX specified in DIMENSIONS command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                throw NxsException("Number of taxon labels exceeds NTAX specified in DIMENSIONS command",
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
             }
-            taxaBlock->addTaxonLabel(token.getToken());
+            // Add to NxsTaxaBlock Class
+            taxaBlock->taxonAdd(token.getToken());
         }
     }
 
@@ -740,48 +874,435 @@ void NxsCharactersBlock::handleTaxlabels(NxsToken &token)
     newtaxa = false;
 }
 
+// Called when CHARSTATELABELS command needs to be parsed from within the CHARACTERS block. Deals with everything
+// after the token CHARSTATELABELS up to and including the semicolon that terminates the CHARSTATELABELS command.
+// Resulting `charLabels' list will store labels only for characters that have not been eliminated, and likewise for
+// `charStates'. Specifically, `charStates[0]' refers to the vector of character state labels for the first
+// non-eliminated character.
+void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
+{
+    nxs->NxsLogMesssage(
+                QString("%1 BLOCK: found command \"CHARSTATELABELS\" on line %2...")
+                .arg(blockID)
+                .arg(token.getFileLine())
+                );
+
+    int currChar = 0;
+    bool semicolonFoundInInnerLoop = false;
+    bool tokenAlreadyRead = false;
+
+    characterList.clear();
+
+    // If there has been no ELIMINATE command build a new charPos map - will be a simple map where key === value.
+    if (charPos.isEmpty()){
+        buildCharPosArray();
+    }
+
+    for (;;) // loop #1
+    {
+        // End of CHARSTATELABELS found therefore break loop.
+        if (semicolonFoundInInnerLoop){
+            break;
+        }
+
+        // Get next token if needed
+        if (tokenAlreadyRead) {
+            tokenAlreadyRead = false;
+        } else {
+            token.getNextToken();
+        }
+
+        // End of CHARSTATELABELS found therefore break loop.
+        if (token.equals(";")) {
+            break;
+        }
+
+        // Token should be the character number (i.e. 1... ncharTotal); create a new association
+        int n = token.getToken().toInt();
+
+        if (n < 1 || n > ncharTotal || n <= currChar) {
+            errorMessage = "Invalid character number (";
+            errorMessage += token.getToken();
+            errorMessage += ") found in CHARSTATELABELS command (either out of range or not interpretable as an integer)";
+            throw NxsException(errorMessage,
+                               token.getFilePosition(),
+                               token.getFileLine(),
+                               token.getFileColumn());
+        }
+
+        // If n is not the next character after currChar, need to add some dummy labels to characterList to fill the gap
+        while (n - currChar > 1) {
+            currChar++;
+            QString characterLabel = QString("Character %1").arg(n);
+            if (!isEliminated(currChar - 1)) {
+                characterAdd(characterLabel, false);
+                nxs->NxsLogMesssage(
+                            QString("%1 BLOCK: created character label [C%2] -> %3")
+                            .arg(blockID)
+                            .arg(n)
+                            .arg(characterLabel)
+                            );
+            } else {
+                characterAdd(characterLabel, true);
+                nxs->NxsLogMesssage(
+                            QString("%1 BLOCK: created character label [C%2] [ELIMINATED] -> %3")
+                            .arg(blockID)
+                            .arg(n)
+                            .arg(characterLabel)
+                            );
+            }
+        }
+
+        currChar++;
+
+        Q_ASSERT(n == currChar);
+
+        // Token should be the character label
+        token.getNextToken();
+        QString characterLabel = token.getToken();
+        if (!isEliminated(currChar - 1)) {
+            characterAdd(characterLabel, false);
+            nxs->NxsLogMesssage(
+                        QString("%1 BLOCK: extracted character label [C%2] -> %3")
+                        .arg(blockID)
+                        .arg(n)
+                        .arg(characterLabel)
+                        );
+        } else {
+            characterAdd(characterLabel, true);
+            nxs->NxsLogMesssage(
+                        QString("%1 BLOCK: extracted character label [C%2] [ELIMINATED] -> %3")
+                        .arg(blockID)
+                        .arg(n)
+                        .arg(characterLabel)
+                        );
+        }
+        // Token should be a slash character if state labels were provided for this character; otherwise,
+        // token should be one of the following:
+        // 1) the comma separating information for different characters, in which case we read in the
+        //	  next token (which should be the next character number)
+        // 2) the semicolon indicating the end of the command
+        token.getNextToken();
+        if (!token.equals("/")){
+            if (!token.equals(",") && !token.equals(";")){
+                errorMessage = "Expecting a comma or semicolon here, but found (";
+                errorMessage += token.getToken();
+                errorMessage += ") instead";
+                throw NxsException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
+            }
+
+            // If ',' get next character number
+            if (token.equals(",")){
+                token.getNextToken();
+            }
+
+            // Miss next bit of code and start next loop item...
+            tokenAlreadyRead = true;
+            continue;
+        }
+
+        // Now create a new association for the character states list
+        int s = 0;
+        for (;;) // loop #2
+        {
+            token.getNextToken();
+
+            // End of CHARSTATELABELS found therefore break loop.
+            if (token.equals(";")){
+                semicolonFoundInInnerLoop = true;
+                break;
+            }
+            // Will be expecting a new character number after this; therefore break loop.
+            if (token.equals(",")){
+                break;
+            }
+
+            if (datatype == continuous){
+                throw NxsException("State Labels cannot be specified when the datatype is continuous",
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
+            }
+
+            // Token should be a character state label; add it to the Character class held in characterList as new State.
+            QString stateLabel = token.getToken();
+            QString stateSymbol = QString(symbols.at(s));
+            characterList[n].addState(stateSymbol, stateLabel, "");
+
+            nxs->NxsLogMesssage(
+                        QString("%1 BLOCK: extracted character [C%2] state label -> [%3] %4")
+                        .arg(blockID)
+                        .arg(n)
+                        .arg(stateSymbol)
+                        .arg(stateLabel)
+                        );
+
+            s++;
+        } // end loop #2
+
+    } // end loop #1
+
+    newchar = false;
+}
+
+// Called when CHARLABELS command needs to be parsed from within the DIMENSIONS block. Deals with everything after
+// the token CHARLABELS up to and including the semicolon that terminates the CHARLABELS command. If an ELIMINATE
+// command has been processed, labels for eliminated characters will not be stored.
+void NxsCharactersBlock::handleCharlabels(NxsToken &token)
+{
+    nxs->NxsLogMesssage(
+                QString("%1 BLOCK: found command \"CHARLABELS\" on line %2...")
+                .arg(blockID)
+                .arg(token.getFileLine())
+                );
+
+    int n = 0;
+    characterList.clear();
+
+    // If there has been no ELIMINATE command build a new charPos map - will be a simple map where key === value.
+    if (charPos.isEmpty()){
+        buildCharPosArray();
+    }
+
+    for (;;)
+    {
+        token.getNextToken();
+
+        // Token should either be ';' or the name of a character (an isolated '_' character is
+        // converted automatically by token.getNextToken() into a space, which is then stored
+        // as the character label)
+        if (token.equals(";")){
+            break;
+        } else {
+            n++;
+
+            // Check to make sure user is not trying to read in more character labels than there are characters
+            if (n > ncharTotal){
+                throw NxsException("Number of character labels exceeds NCHAR specified in DIMENSIONS command",
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
+            }
+
+            QString characterLabel = token.getToken();
+            if (!isEliminated(n - 1)) {
+                characterAdd(characterLabel, false);
+                nxs->NxsLogMesssage(
+                            QString("%1 BLOCK: extracted character label [C%2] -> %3")
+                            .arg(blockID)
+                            .arg(n)
+                            .arg(characterLabel)
+                            );
+            } else {
+                characterAdd(characterLabel, true);
+                nxs->NxsLogMesssage(
+                            QString("%1 BLOCK: extracted character label [C%2] [ELIMINATED] -> %3")
+                            .arg(blockID)
+                            .arg(n)
+                            .arg(characterLabel)
+                            );
+            }
+        }
+    }
+    newchar = false;
+}
+
+// Called when STATELABELS command needs to be parsed from within the DIMENSIONS block. Deals with everything after
+// the token STATELABELS up to and including the semicolon that terminates the STATELABELS command. Note that the
+// numbers of states are shifted back one before being stored so that the character numbers in the NxsStringVectorMap
+// objects are 0-offset rather than being 1-offset as in the NxsReader data file.
+void NxsCharactersBlock::handleStatelabels(NxsToken &token)
+{
+    nxs->NxsLogMesssage(
+                QString("%1 BLOCK: found command \"STATELABELS\" on line %2...")
+                .arg(blockID)
+                .arg(token.getFileLine())
+                );
+
+    bool semicolonFoundInInnerLoop = false;
+
+    if (datatype == continuous){
+        throw NxsException("STATELABELS cannot be specified when the datatype is continuous",
+                           token.getFilePosition(),
+                           token.getFileLine(),
+                           token.getFileColumn());
+    }
+
+    if (characterList.count() != ncharTotal) {
+        throw NxsException("STATELABELS cannot be specified before the CHARLABELS command",
+                           token.getFilePosition(),
+                           token.getFileLine(),
+                           token.getFileColumn());
+    }
+
+    if (charPos.isEmpty()){
+        buildCharPosArray();
+    }
+
+    for (;;)
+    {
+        if (semicolonFoundInInnerLoop){
+            break;
+        }
+
+        token.getNextToken();
+
+        if (token.equals(";")){
+            break;
+        }
+
+        // Token should be the character number; create a new association
+        int n = token.getToken().toInt();
+
+        if (n < 1 || n > ncharTotal){
+            errorMessage = "Invalid character number (";
+            errorMessage += token.getToken();
+            errorMessage += ") found in STATELABELS command (either out of range or not interpretable as an integer)";
+            throw NxsException(errorMessage,
+                               token.getFilePosition(),
+                               token.getFileLine(),
+                               token.getFileColumn());
+        }
+
+        int s = 0;
+        for (;;)
+        {
+            token.getNextToken();
+
+            if (token.equals(";")){
+                semicolonFoundInInnerLoop = true;
+                break;
+            }
+
+            if (token.equals(",")){
+                break;
+            }
+
+            // Token should be a character state label; add it to the list           
+            QString stateLabel = token.getToken();
+            QString stateSymbol = QString(symbols.at(s));
+            characterList[n-1].addState(stateSymbol, stateLabel, "");
+            nxs->NxsLogMesssage(
+                        QString("%1 BLOCK: extracted character [C%2] state label -> [%3] %4")
+                        .arg(blockID)
+                        .arg(n)
+                        .arg(stateSymbol)
+                        .arg(stateLabel)
+                        );
+            s++;
+        }
+    }
+}
+
+// Called when MATRIX command needs to be parsed from within the CHARACTERS block. Deals with everything after the
+// token MATRIX up to and including the semicolon that terminates the MATRIX command.
+void NxsCharactersBlock::handleMatrix(NxsToken &token)
+{
+    nxs->NxsLogMesssage(
+                QString("%1 BLOCK: found command \"MATRIX\" on line %2...")
+                .arg(blockID)
+                .arg(token.getFileLine())
+                );
+
+    if (ntax == 0){
+       errorMessage = "Must precede ";
+       errorMessage += blockID;
+       errorMessage += " block with a TAXA block or specify NEWTAXA and NTAX in the DIMENSIONS command";
+       throw NxsException(errorMessage,
+                          token.getFilePosition(),
+                          token.getFileLine(),
+                          token.getFileColumn());
+    }
+
+    if (ntaxTotal == 0) {
+        ntaxTotal = taxaBlock->getNumTaxonLabels();
+    }
+
+    //if (!discreteCharMatrix->isEmpty()){
+    //    discreteCharMatrix->clear();
+    //}
+
+    //continuousCharMatrix.clear();
+
+    // Initialize the QLists activeTaxon and activeChar. All characters and all taxa are initially active.
+    for (int i = 0; i < ntax; i++){
+        activeTaxon.insert(i, true);
+    }
+
+    for (int i = 0; i < nchar; i++){
+        activeChar.insert(i, true);
+    }
+
+    // The value of ncharTotal is normally identical to the value of nchar specified
+    // in the CHARACTERS block DIMENSIONS command.	If an ELIMINATE command is
+    // processed, however, nchar < ncharTotal.	Note that the ELIMINATE command
+    // will have already been read by now, and the eliminated character numbers
+    // will be stored in the NxsIntSetMap eliminated.
+    // Note that if an ELIMINATE command has been read, charPos will have already
+    // been created; thus, we only need to allocate and initialize charPos if user
+    // did not specify an ELIMINATE command
+    if (charPos.isEmpty()){
+        buildCharPosArray();
+    }
+
+    // The value of ntaxTotal equals the number of taxa specified in the
+    // TAXA block, whereas ntax equals the number of taxa specified in
+    // the DIMENSIONS command of the CHARACTERS block.	These two numbers
+    // will be identical unless some taxa were left out of the MATRIX
+    // command of the CHARACTERS block, in which case ntax < ntaxTotal.
+    if (!taxonPos.isEmpty()){
+        taxonPos.clear();
+    }
+
+    for (int i = 0; i < ntaxTotal; i++){
+        taxonPos.insert(i, INT_MAX);
+    }
+
+    if (datatype == NxsCharactersBlock::continuous){
+        nxs->NxsLogMesssage(
+                    QString("%1 BLOCK: MATRIX: is made of CONTINUOUS data.")
+                    .arg(blockID)
+                    );
+        //ContinuousCharRow row(nchar);
+        //continuousCharMatrix.assign(ntax, row);
+    } else {
+        nxs->NxsLogMesssage(
+                    QString("%1 BLOCK: MATRIX: is made of DISCRETE data.")
+                    .arg(blockID)
+                    );
+        //discreteCharMatrix = new NxsDiscreteMatrix(ntax, nchar);
+    }
+
+    if (transposing){
+        nxs->NxsLogMesssage(
+                    QString("%1 BLOCK: MATRIX: is TRANSPOSED, loading tranposing matrix reader...")
+                    .arg(blockID)
+                    );
+        //handleTransposedMatrix(token)
+    } else {
+        nxs->NxsLogMesssage(
+                    QString("%1 BLOCK: MATRIX: is STANDARD, loading standard matrix reader...")
+                    .arg(blockID)
+                    );
+        //handleStandardMatrix(token);
+    }
+
+    demandEndSemicolon(token, "MATRIX");
+
+    // If we've gotten this far, presumably it is safe to
+    // tell the ASSUMPTIONS block that were ready to take on
+    // the responsibility of being the current character-containing
+    // block (to be consulted if characters are excluded or included
+    // or if taxa are deleted or restored)
+    //assumptionsBlock->setCallback(this);
+}
 
 /*------------------------------------------------------------------------------------/
  * Other Functions
  *-----------------------------------------------------------------------------------*/
-
-// This virtual function must be overridden for each derived class to provide the ability to return a standard data object.
-QMap<QString, QVariant> NxsCharactersBlock::getData()
-{
-    blockData.insert("NCHAR", nchar);
-    return blockData;
-}
-
-// Flushes taxonLabels and sets taxaNumber to 0 in preparation for reading a new TAXA block.
-void NxsCharactersBlock::reset()
-{
-    NxsBlock::reset();
-
-    ncharTotal = 0;
-    nchar = 0;
-    ntaxTotal = 0;
-    ntax = 0;
-    newchar = true;
-    newtaxa = false;
-    interleaving = false;
-    transposing = false;
-    respectingCase = false;
-    labels = true;
-    tokens = false;
-    datatype = NxsCharactersBlock::standard;
-
-    missing = nxs->defaultMissingCharacter;
-    gap = nxs->defaultGapCharacter;
-    matchchar = nxs->defaultMatchCharacter;
-
-    resetSymbols();
-    equates.clear();
-
-    items.clear();
-    items.append("STATES");
-
-    statesFormat = STATES_PRESENT;
-}
 
 // Returns true if `ch' can be found in the `symbols' list. The value of `respectingCase' is used to determine
 // whether or not the search should be case sensitive. Assumes `symbols' is non-NULL.
@@ -918,7 +1439,7 @@ int NxsCharactersBlock::taxonLabelToNumber(QString str)
 {
     int i;
     try {
-        i = 1 + taxaBlock->findTaxon(str);
+        i = 1 + taxaBlock->taxonFind(str);
     } catch(NxsTaxaBlock::NxsX_NoSuchTaxon){
         i = 0;
     }
@@ -932,9 +1453,9 @@ int NxsCharactersBlock::taxonLabelToNumber(QString str)
 int NxsCharactersBlock::charLabelToNumber(QString str)
 {
     int k = 0;
-    for (int i = 0; i < charLabels.count(); ++i)
+    for (int i = 0; i < characterList.count(); ++i)
     {
-        if (charLabels.at(i) == str){
+        if (characterList[i].characterName == str){
             return i+1;
         }
     }
@@ -942,7 +1463,7 @@ int NxsCharactersBlock::charLabelToNumber(QString str)
     return k;
 }
 
-// Use to allocate memory for (and initialize) `charPos' array, which keeps track of the original character index in
+// Use to initialize `charPos' map, which keeps track of the original character index in
 // cases where characters have been eliminated. This function is called by handleEliminate in response to encountering
 // an ELIMINATE command in the data file, and this is probably the only place where buildCharPosArray should be called
 // with `checkEliminated' true. buildCharPosArray is also called in handleMatrix, handleCharstatelabels,
@@ -955,9 +1476,9 @@ void NxsCharactersBlock::buildCharPosArray(bool checkEliminated)
     for (int j = 0; j < ncharTotal; j++)
     {
         if (checkEliminated && isEliminated(j)){
-            charPos[j] = INT_MAX;
+            charPos.insert(j, INT_MAX);
         } else {
-            charPos[j] = k++;
+            charPos.insert(j, k++);
         }
     }
 }
@@ -981,4 +1502,26 @@ bool NxsCharactersBlock::isEliminated(int origCharIndex)
         }
     }
     return false;
+}
+
+// Returns current index of character in matrix. This may differ from the original index if some characters were
+// removed using an ELIMINATE command. For example, character number 9 in the original data matrix may now be at
+// position 8 if the original character 8 was eliminated. The parameter `origCharIndex' is assumed to range from
+// 0 to `ncharTotal' - 1.
+int NxsCharactersBlock::getCharPos(int origCharIndex)
+{
+    Q_ASSERT(!charPos.isEmpty());
+    Q_ASSERT(origCharIndex < ncharTotal);
+
+    return charPos.value(origCharIndex);
+}
+
+
+int NxsCharactersBlock::characterAdd(QString characterLabel, bool isEliminated) {
+    isEmpty = false;
+    Character newCharacter = Character(nextCharacterID,characterLabel,"");
+    newCharacter.setIsEliminated(isEliminated);
+    characterList.append(newCharacter);
+    nextCharacterID++;
+    return (characterList.count());
 }

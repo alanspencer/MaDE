@@ -63,7 +63,6 @@ class NxsException;
 
 typedef QList<NxsBlock *> NxsBlockList;
 typedef QMap<QString, NxsBlockList> NxsBlockIDToBlockList;
-typedef QMap<int, int> NxsIntSetMap;
 
 class NxsReader
 {
@@ -90,7 +89,6 @@ public:
     QChar defaultMatchCharacter;
 
     void addBlock(QString blockID);
-    QMap<QString, QVariant> getBlockData(QString blockID, int blockKey);
     int getBlockCount(QString blockID);
     bool execute(NxsToken &token);
 

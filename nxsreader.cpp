@@ -65,8 +65,6 @@ NxsReader::NxsReader(MainWindow *mw, Settings *s)
     defaultGapCharacter = settings->getSetting("defaultGapCharacter").toString().at(0);
     defaultMatchCharacter = settings->getSetting("defaultMatchCharacter").toString().at(0);
 
-    qDebug() << defaultMissingCharacter << defaultGapCharacter << defaultMatchCharacter;
-
     NxsLogMesssage(QString("starting NEXUS Class Library."));
 }
 
@@ -111,23 +109,6 @@ void NxsReader::loadBlocks()
             }
         }
     }
-}
-
-QMap<QString, QVariant> NxsReader::getBlockData(QString blockID, int blockKey = 0)
-{
-
-    NxsBlockList blockUsedList;
-    if (blockIDToBlockList.contains(blockID)){
-        blockUsedList = blockIDToBlockList.value(blockID);
-        if (blockUsedList.count() == 1) {
-            return blockUsedList[0]->getData();
-        } else if (blockUsedList.count() > 1 && blockKey < blockUsedList.count()) {
-            return blockUsedList[blockKey]->getData();
-        }
-    }
-
-    QMap<QString, QVariant> data;
-    return data;
 }
 
 int NxsReader::getBlockCount(QString blockID)

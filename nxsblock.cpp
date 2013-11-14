@@ -67,12 +67,6 @@ void NxsBlock::read(NxsToken &)
 
 }
 
-// This virtual function must be overridden for each derived class to provide the ability to return a standard data object.
-QMap<QString, QVariant> NxsBlock::getData()
-{
-    return blockData;
-}
-
 // Hook to consolidate the handling of COMMANDS that are common to all blocks (TITLE, BLOCKID, END, ENDBLOCK -- and,
 // evenually, LINK).
 // HandleXYZ() where XYZ is the command name is then called.

@@ -29,6 +29,7 @@ public:
 
     int characterID;
     bool characterEnabled;
+    bool characterEliminated;
     QString characterName;
     QString characterNotes;
     QList <State> stateList;
@@ -36,12 +37,14 @@ public:
     bool characterOrdered;
 
     void setIsEnabled(bool enabled);
+    void setIsEliminated(bool eliminate);
     void setIsOrdered(bool ordered);
     void setName(QString name);
     void setNotes(QString notes);
 
     int getID();
     bool getIsEnabled();
+    bool getIsEliminated();
     bool getIsOrdered();
     QString getName();
     QString getNotes();

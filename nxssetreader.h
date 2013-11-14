@@ -1,13 +1,15 @@
 #ifndef NXSSETREADER_H
 #define NXSSETREADER_H
 
+#include <QtWidgets>
+
 class NxsToken;
 class NxsBlock;
 
 class NxsSetReader
 {
 public:
-    NxsSetReader(NxsToken &t, int maxValue, NxsIntSetMap &ism, NxsBlock &b, int type);
+    NxsSetReader(NxsToken &t, int maxValue, QMap<int, int> &ism, NxsBlock &b, int type);
 
     enum NxsSetReaderEnum           // For use with the variable `settype'
     {
@@ -27,7 +29,7 @@ private:
     NxsToken &token;        // reference to the token being used to parse the NEXUS data file
     NxsBlock &block;        // reference to the block object used for looking up labels
     int max;                // maximum number of elements in the set
-    NxsIntSetMap &intSetMap;
+    QMap<int, int> &intSetMap;// QMap<int, int> of eliminate state
     int settype;            // the type of set being read (see the NxsSetReaderEnum enumeration)
 };
 

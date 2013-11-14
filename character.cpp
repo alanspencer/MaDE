@@ -21,6 +21,7 @@ Character::Character(int id, QString name, QString notes)
 {
     characterID = id;
     characterEnabled = true;
+    characterEliminated = false;
     characterName = name;
     characterNotes = notes;
     characterOrdered = false;
@@ -30,6 +31,10 @@ Character::Character(int id, QString name, QString notes)
 
 void Character::setIsEnabled(bool enabled) {
     characterEnabled = enabled;
+}
+
+void Character::setIsEliminated(bool eliminate) {
+    characterEliminated = eliminate;
 }
 
 void Character::setIsOrdered(bool ordered) {
@@ -52,6 +57,10 @@ int Character::getID() {
 
 bool Character::getIsEnabled() {
     return characterEnabled;
+}
+
+bool Character::getIsEliminated() {
+    return characterEliminated;
 }
 
 bool Character::getIsOrdered() {

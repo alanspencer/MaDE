@@ -42,13 +42,13 @@
 NxsTaxaBlock::NxsTaxaBlock(NxsReader *pointer)
 {
     setNxsReader(pointer);
-    ntax = 0;
     blockID = "TAXA";
+    nextTaxonID = 0;
 }
 
 NxsTaxaBlock::~NxsTaxaBlock()
 {
-    taxonLabels.clear();
+    taxonList.clear();
 }
 
 // This function provides the ability to read everything following the block name (which is read by the Nxs
@@ -84,7 +84,7 @@ void NxsTaxaBlock::read(NxsToken &token)
                 {
                     token.getNextToken();
                     // Should check to make sure this is not punctuation
-                    addTaxonLabel(token.getToken());
+                    taxonAdd(token.getToken());
                     nxs->NxsLogMesssage(QString("TAXA Block: extracted taxon label [T%1] -> %2.").arg(i+1).arg(token.getToken()));
                 }
                 demandEndSemicolon(token, "TAXLABELS");
@@ -137,43 +137,55 @@ int NxsTaxaBlock::handleDimensions(NxsToken &token, QString ntaxLabel)
 
 // Adds taxon label to end of list of taxon labels and increments ntax by 1. Returns index of taxon label just
 // added.
-int NxsTaxaBlock::addTaxonLabel(QString taxonLabel)
+int NxsTaxaBlock::taxonAdd(QString taxonLabel)
 {
     isEmpty = false;
-    taxonLabels.append(taxonLabel);
-    ntax++;
-    return (ntax-1);
+    taxonList.append(Taxon(nextTaxonID,taxonLabel,""));
+    nextTaxonID++;
+    return (taxonList.count());
 }
 
 int NxsTaxaBlock::getNumTaxonLabels()
 {
-    return taxonLabels.count();
+    // same as nTax
+    return taxonList.count();
 }
 
-// This virtual function must be overridden for each derived class to provide the ability to return a standard data object.
-QMap<QString, QVariant> NxsTaxaBlock::getData()
+QList<Taxon> NxsTaxaBlock::getTaxonList()
 {
-    blockData.insert("NTAX", ntax);
-    blockData.insert("TAXLABELS", taxonLabels);
-    return blockData;
+    return taxonList;
 }
 
 // Flushes taxonLabels and sets taxaNumber to 0 in preparation for reading a new TAXA block.
 void NxsTaxaBlock::reset()
 {
     NxsBlock::reset();
-    ntax = 0;
-    taxonLabels.clear();
+    isEmpty = true;
+    nextTaxonID = 0;
+    taxonList.clear();
 }
 
 // Returns index of taxon named 'str' in taxonLabels list. If taxon named 'str' cannot be found, or if there are no
 // labels currently stored in the taxonLabels list, throws NxsX_NoSuchTaxon exception.
-int NxsTaxaBlock::findTaxon(const QString &str) const
+int NxsTaxaBlock::taxonFind(QString &str)
 {
-    for (int i = 0; i < taxonLabels.count(); ++i)
+    for (int i = 0; i < taxonList.count(); ++i)
     {
-        if (taxonLabels.at(i) == str){
+        if (taxonList[i].getName() == str){
             return i;
+        }
+    }
+    throw NxsTaxaBlock::NxsX_NoSuchTaxon();
+}
+
+// Returns Taxon ID of taxon named 'str' in taxonLabels list. If taxon named 'str' cannot be found, or if there are no
+// labels currently stored in the taxonLabels list, throws NxsX_NoSuchTaxon exception.
+int NxsTaxaBlock::taxonIDFind(QString &str)
+{
+    for (int i = 0; i < taxonList.count(); ++i)
+    {
+        if (taxonList[i].getName() == str){
+            return taxonList[i].getID();
         }
     }
     throw NxsTaxaBlock::NxsX_NoSuchTaxon();
