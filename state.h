@@ -30,11 +30,11 @@ public:
     QString stateNotes;
 
     void setSymbol(QString symbol);
-    void setName(QString name);
+    void setLabel(QString name);
     void setNotes(QString notes);
 
     QString getSymbol();
-    QString getName();
+    QString getLabel();
     QString getNotes();
 };
 

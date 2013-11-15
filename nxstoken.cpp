@@ -47,15 +47,6 @@
 
 NxsToken::NxsToken(QTextStream &i) : in(i)
 {
-    /*QFile file(filename);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        errorMessage = "Unable to open .nex file in readonly text mode.";
-        throw NxsException(errorMessage, 0, 0, 0);
-    }
-
-    QTextStream in(&file);
-    nexusData = in.readAll();
-    file.close();*/
 
     nexusData = in.readAll();
 
@@ -429,6 +420,7 @@ void NxsToken::getNextToken()
             appendToToken(ch);
         }
     }
+    labileFlags = 0;
 }
 
 void NxsToken::resetToken()
@@ -720,4 +712,10 @@ void NxsToken::getDoubleQuotedToken()
             appendToToken(ch);
         }
     }
+}
+
+// Replaces the current token with the given 'str'
+void NxsToken::replaceToken(QString str)
+{
+    token = str;
 }

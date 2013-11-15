@@ -27,7 +27,7 @@ Taxon::Taxon(int id, QString name, QString notes)
 
 //-- Setters:
 
-void Taxon::setName(QString name) {
+void Taxon::setLabel(QString name) {
     taxonName = name;
 }
 
@@ -50,7 +50,7 @@ bool Taxon::getIsEnabled() {
     return taxonEnabled;
 }
 
-QString Taxon::getName() {
+QString Taxon::getLabel() {
     return taxonName;
 }
 

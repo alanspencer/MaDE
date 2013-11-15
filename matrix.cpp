@@ -123,7 +123,7 @@ void Matrix::setupMatrixTable()
         //---- Update the table view
         for(int t = 0; t < taxaNumber; t++)
         {
-            QString taxonName = taxonList[t].getName();
+            QString taxonName = taxonList[t].getLabel();
             //---- Add Row
             matrix->matrixLeftTableWidget->insertRow(t);
             QTableWidgetItem *newItem = new QTableWidgetItem(tr("%1").arg(taxonName));
@@ -539,7 +539,7 @@ void Matrix::insertRow(int row)
 
 void Matrix::insertRowLeftTable(int row)
 {
-    QString taxonName = taxonList[row].getName();
+    QString taxonName = taxonList[row].getLabel();
     //---- Add Row
     matrixLeftTableWidget->insertRow(row);
     QTableWidgetItem *newItem = new QTableWidgetItem(tr("%1").arg(taxonName));
@@ -970,7 +970,7 @@ bool Matrix::taxonAdd(QString name, QString notes) {
 
 //---- Edit Taxon
 bool Matrix::taxonEdit(int key, QString name, QString notes) {
-    taxonList[key].setName(name);
+    taxonList[key].setLabel(name);
     taxonList[key].setNotes(notes);
     isModified = true;
     return true;
@@ -1047,7 +1047,7 @@ bool Matrix::characterAdd(QString name, QString notes) {
 
 //---- Edit Character
 bool Matrix::characterEdit(int key, QString name, QString notes) {
-    characterList[key].setName(name);
+    characterList[key].setLabel(name);
     characterList[key].setNotes(notes);
     isModified = true;
     return true;

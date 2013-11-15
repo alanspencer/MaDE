@@ -21,24 +21,70 @@ Cell::Cell(QString state, QString notes)
 {
     cellState = state;
     cellNotes = notes;
+    isPolymorphic = false;
+    isMissing = false;
+    isGap = false;
+    isMatchchar = false;
+    isUncertainty = false;
 }
 
 //-- Setters:
 
 void Cell::setState(QString state) {
-    this->cellState = state;
+    cellState = state;
 }
 
+void Cell::setPolymorphic(bool polymorphic) {
+    isPolymorphic = polymorphic;
+}
+
+void Cell::setMissing(bool missing) {
+    isMissing = missing;
+}
+
+void Cell::setGap(bool gap) {
+    isGap = gap;
+}
+
+void Cell::setMatchchar(bool matchchar) {
+    isMatchchar = matchchar;
+}
+
+void Cell::setUncertainty(bool uncertainty) {
+    isUncertainty = uncertainty;
+}
+
+
 void Cell::setNotes(QString notes) {
-    this->cellNotes = notes;
+    cellNotes = notes;
 }
 
 //-- Getters:
 
 QString Cell::getState() {
-    return this->cellState;
+    return cellState;
+}
+
+bool Cell::getPolymorphic() {
+    return isPolymorphic;
+}
+
+bool Cell::getMissing() {
+    return isMissing;
+}
+
+bool Cell::getGap() {
+    return isGap;
+}
+
+bool Cell::getMatchchar() {
+    return isMatchchar;
+}
+
+bool Cell::getUncertainty() {
+    return isUncertainty;
 }
 
 QString Cell::getNotes() {
-    return this->cellNotes;
+    return cellNotes;
 }

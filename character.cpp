@@ -41,7 +41,7 @@ void Character::setIsOrdered(bool ordered) {
     characterOrdered = ordered;
 }
 
-void Character::setName(QString name) {
+void Character::setLabel(QString name) {
     characterName = name;
 }
 
@@ -67,7 +67,7 @@ bool Character::getIsOrdered() {
     return characterOrdered;
 }
 
-QString Character::getName() {
+QString Character::getLabel() {
     return characterName;
 }
 

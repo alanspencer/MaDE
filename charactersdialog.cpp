@@ -130,7 +130,7 @@ void CharactersDialog::updateCharactersDialog()
         stateUnderlineToolButton->setEnabled(true);
 
         // Get Data from Matrix
-        nameLineEdit->setText(matrix->characterList[selectedRow].getName());        
+        nameLineEdit->setText(matrix->characterList[selectedRow].getLabel());
         notesTextEdit->setHtml(matrix->characterList[selectedRow].getNotes());        
         isEnabledCheckBox->setChecked(matrix->characterList[selectedRow].getIsEnabled());
 
@@ -142,7 +142,7 @@ void CharactersDialog::updateCharactersDialog()
             orderedRadioButton->setChecked(false);
         }
         stateSymbolLabel->setText(matrix->characterList[selectedRow].getState(selectedStateRow).getSymbol());
-        stateNameLineEdit->setText(matrix->characterList[selectedRow].getState(selectedStateRow).getName());
+        stateNameLineEdit->setText(matrix->characterList[selectedRow].getState(selectedStateRow).getLabel());
         stateNotesTextEdit->setHtml(matrix->characterList[selectedRow].getState(selectedStateRow).getNotes());
 
         initializeStatesList();
@@ -176,7 +176,7 @@ void CharactersDialog::initializeCharactersList()
         //---- Update the table view
         for(int i = 0; i < characterNumber; i++)
         {
-            QString characterName = matrix->characterList[i].getName();
+            QString characterName = matrix->characterList[i].getLabel();
             bool isEnabled = matrix->characterList[i].getIsEnabled();
             //---- Add Row
             if(i != 0) {
@@ -229,7 +229,7 @@ void CharactersDialog::initializeStatesList()
             if(i != 0) {
                 statesListTableWidget->insertRow(i);
             }
-            QTableWidgetItem *newItem = new QTableWidgetItem(tr("%1").arg(state.getName()));
+            QTableWidgetItem *newItem = new QTableWidgetItem(tr("%1").arg(state.getLabel()));
             newItem->setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled);
             statesListTableWidget->setItem(i, 0, newItem);
 
@@ -256,7 +256,7 @@ void CharactersDialog::saveData(int row)
             name = "Undefined";
         }
 
-        matrix->characterList[row].setName(name);
+        matrix->characterList[row].setLabel(name);
         characterListTableWidget->item(row, 0)->setText(name);
         mw->updateCharacterDock();
 
@@ -293,7 +293,7 @@ void CharactersDialog::selectCharacter(int row)
 void CharactersDialog::moveRow(bool up)
 {
     int sourceRow = characterListTableWidget->row(characterListTableWidget->selectedItems().at(0));
-    QString characterName = matrix->characterList[sourceRow].getName();
+    QString characterName = matrix->characterList[sourceRow].getLabel();
     int destRow = (up ? sourceRow-1 : sourceRow+1);
 
     // Take whole rows
@@ -433,7 +433,7 @@ void CharactersDialog::actionAddCharacter()
     int row = matrix->charactersCount()-1;
 
     QString characterName = QString("Character %1").arg(matrix->characterList[matrix->charactersCount()-1].getID()+1);
-    matrix->characterList[row].setName(characterName);
+    matrix->characterList[row].setLabel(characterName);
     bool isEnabled = matrix->characterList[row].getIsEnabled();
     matrix->insertColumn(row);
 
@@ -466,7 +466,7 @@ void CharactersDialog::actionDeleteCharacter()
     doNotSave = true;
     int removeAt = selectedRow; // === column to remove
 
-    QString characterName = matrix->characterList[removeAt].getName();
+    QString characterName = matrix->characterList[removeAt].getLabel();
 
     matrix->deleteColumn(removeAt);
 

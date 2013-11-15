@@ -283,7 +283,7 @@ void MainWindow::updateTaxaDock()
         //---- Update the table view
         for(int i = 0; i < taxaNumber; i++)
         {
-            QString taxonName = activeMatrix->taxonList[i].getName();
+            QString taxonName = activeMatrix->taxonList[i].getLabel();
             int isEnabled = activeMatrix->taxonList[i].getIsEnabled();
             //---- Add Row
             if(i != 0) {
@@ -398,7 +398,7 @@ void MainWindow::updateCharacterDock()
         //---- Update the table view
         for(int i = 0; i < characterNumber; i++)
         {
-            QString characterName = activeMatrix->characterList[i].getName();
+            QString characterName = activeMatrix->characterList[i].getLabel();
             int isEnabled = activeMatrix->characterList[i].getIsEnabled();
 
             if(i != 0) {
@@ -501,8 +501,8 @@ void MainWindow::updateDataDock()
 
     //qDebug() << "Selected Row = " << row << " Column = " << column << " | Selected TaxonID = " << taxonID << " CharacterID = " << characterID;
 
-    ui->dataTaxonText->setText(QString("T%1 - %2").arg(row+1).arg(activeMatrix->taxonList[row].getName()));
-    ui->dataCharacterText->setText(QString("C%1 - %2").arg(column+1).arg(activeMatrix->characterList[column].getName()));
+    ui->dataTaxonText->setText(QString("T%1 - %2").arg(row+1).arg(activeMatrix->taxonList[row].getLabel()));
+    ui->dataCharacterText->setText(QString("C%1 - %2").arg(column+1).arg(activeMatrix->characterList[column].getLabel()));
 
     // Update States Table
     QString symbol;
@@ -524,7 +524,7 @@ void MainWindow::updateDataDock()
                 newItem->setFlags(Qt::ItemIsEnabled);
                 ui->dataStatesTableWidget->setVerticalHeaderItem(n,newItem);
 
-                newItem = new QTableWidgetItem(tr("%1").arg(activeMatrix->characterList[column].getState(n).getName()));
+                newItem = new QTableWidgetItem(tr("%1").arg(activeMatrix->characterList[column].getState(n).getLabel()));
                 newItem->setFont(selectedFont);
                 newItem->setFlags(Qt::ItemIsEnabled);
                 ui->dataStatesTableWidget->setItem(n,0,newItem);
@@ -533,7 +533,7 @@ void MainWindow::updateDataDock()
                 newItem->setFlags(Qt::ItemIsEnabled);
                 ui->dataStatesTableWidget->setVerticalHeaderItem(n,newItem);
 
-                newItem = new QTableWidgetItem(tr("%1").arg(activeMatrix->characterList[column].getState(n).getName()));
+                newItem = new QTableWidgetItem(tr("%1").arg(activeMatrix->characterList[column].getState(n).getLabel()));
                 newItem->setFlags(Qt::ItemIsEnabled);
                 ui->dataStatesTableWidget->setItem(n,0,newItem);
             }

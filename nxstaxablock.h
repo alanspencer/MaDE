@@ -57,8 +57,11 @@ public:
     int taxonAdd(QString taxonLabel);
     QList<Taxon> getTaxonList();
     int getNumTaxonLabels();
-    int taxonFind(QString & str);
-    int taxonIDFind(QString & str);
+    int taxonFind(QString &str);
+    int taxonIDFind(QString &str);
+    int getTaxonID(int position);
+    bool taxonIsDefined(QString str);
+    void taxonMove(int currentPosition, int requiredPosition);
 
     class NxsX_NoSuchTaxon {};	// thrown if findTaxon cannot locate a supplied taxon label in the taxonLabels vector
 

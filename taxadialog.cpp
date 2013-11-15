@@ -90,7 +90,7 @@ void TaxaDialog::updateTaxaDialog()
         disconnect(nameLineEdit, SIGNAL(textEdited(QString)), this, SLOT(updateTableTaxonName(QString)));
 
         // Get Data from Matrix
-        nameLineEdit->setText(matrix->taxonList[selectedRow].getName());
+        nameLineEdit->setText(matrix->taxonList[selectedRow].getLabel());
         nameLineEdit->setEnabled(true);
 
         notesTextEdit->setHtml(matrix->taxonList[selectedRow].getNotes());
@@ -132,7 +132,7 @@ void TaxaDialog::initializeTaxonList()
         //---- Update the table view
         for(int i = 0; i < taxaNumber; i++)
         {
-            QString taxonName = matrix->taxonList[i].getName();
+            QString taxonName = matrix->taxonList[i].getLabel();
             bool isEnabled = matrix->taxonList[i].getIsEnabled();
             //---- Add Row
             if(i != 0) {
@@ -166,7 +166,7 @@ void TaxaDialog::saveData(int row)
             name = "Undefined";
         }
 
-        matrix->taxonList[row].setName(name);
+        matrix->taxonList[row].setLabel(name);
         taxonListTableWidget->item(row, 0)->setText(name);
         mw->updateTaxaDock();
 
@@ -197,7 +197,7 @@ void TaxaDialog::selectTaxon(int row)
 void TaxaDialog::moveRow(bool up)
 {
     int sourceRow = taxonListTableWidget->row(taxonListTableWidget->selectedItems().at(0));
-    QString taxonName = matrix->taxonList[sourceRow].getName();
+    QString taxonName = matrix->taxonList[sourceRow].getLabel();
     int destRow = (up ? sourceRow-1 : sourceRow+1);
 
     // Take whole rows
@@ -295,7 +295,7 @@ void TaxaDialog::actionAddTaxon()
 
     matrix->taxonAdd("temp","");
     QString taxonName = QString("Taxon %1").arg(matrix->taxonList[matrix->taxaCount()-1].getID()+1);
-    matrix->taxonList[matrix->taxaCount()-1].setName(taxonName);
+    matrix->taxonList[matrix->taxaCount()-1].setLabel(taxonName);
 
     int row = matrix->taxaCount()-1;
     bool isEnabled = matrix->taxonList[row].getIsEnabled();
@@ -329,7 +329,7 @@ void TaxaDialog::actionDeleteTaxon()
 
     doNotSave = true;
     int row = selectedRow;
-    QString taxonName = matrix->taxonList[row].getName();
+    QString taxonName = matrix->taxonList[row].getLabel();
 
     matrix->deleteRow(row);
 

@@ -27,10 +27,26 @@ public:
 
     QString cellState;
     QString cellNotes;
+    bool isPolymorphic;
+    bool isMissing;
+    bool isGap;
+    bool isMatchchar;
+    bool isUncertainty;
 
     void setState(QString state);
+    void setPolymorphic(bool polymorphic);
+    void setMissing(bool missing);
+    void setGap(bool gap);
+    void setMatchchar(bool matchchar);
+    void setUncertainty(bool uncertainty);
     void setNotes(QString notes);
+
     QString getState();
+    bool getPolymorphic();
+    bool getMissing();
+    bool getGap();
+    bool getMatchchar();
+    bool getUncertainty();
     QString getNotes();
 };
 

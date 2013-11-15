@@ -25,12 +25,12 @@ class Taxon
 public:
     Taxon(int id, QString name, QString notes);
 
-    void setName(QString name);
+    void setLabel(QString name);
     void setNotes(QString notes);
     void setIsEnabled(bool enabled);
 
     int getID();
-    QString getName();
+    QString getLabel();
     QString getNotes();
     bool getIsEnabled();
 

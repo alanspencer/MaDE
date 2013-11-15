@@ -171,7 +171,7 @@ int NxsTaxaBlock::taxonFind(QString &str)
 {
     for (int i = 0; i < taxonList.count(); ++i)
     {
-        if (taxonList[i].getName() == str){
+        if (taxonList[i].getLabel() == str){
             return i;
         }
     }
@@ -184,9 +184,36 @@ int NxsTaxaBlock::taxonIDFind(QString &str)
 {
     for (int i = 0; i < taxonList.count(); ++i)
     {
-        if (taxonList[i].getName() == str){
+        if (taxonList[i].getLabel() == str){
             return taxonList[i].getID();
         }
     }
     throw NxsTaxaBlock::NxsX_NoSuchTaxon();
+}
+
+// Returns Taxon ID of taxon at the list position given by 'position'.
+int NxsTaxaBlock::getTaxonID(int position)
+{
+    return taxonList[position].getID();
+}
+
+// Returns true if taxon label equal to 'str' can be found in the taxonLabels list, and returns false otherwise.
+bool NxsTaxaBlock::taxonIsDefined(QString str)
+{
+    bool found = false;
+
+    for(int i = 0; i < taxonList.count(); i++)
+    {
+        if (taxonList[i].getLabel() == str) {
+            found = true;
+        }
+    }
+
+    return found;
+}
+
+// Move the selected taxon in 'currentPosition' to 'requiredPosition' within the taxonList.
+void NxsTaxaBlock::taxonMove(int currentPosition, int requiredPosition)
+{
+    taxonList.move(currentPosition, requiredPosition);
 }

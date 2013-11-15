@@ -30,7 +30,7 @@ void State::setSymbol(QString symbol) {
     stateSymbol = symbol;
 }
 
-void State::setName(QString name) {
+void State::setLabel(QString name) {
     stateName = name;
 }
 
@@ -44,7 +44,7 @@ QString State::getSymbol() {
     return stateSymbol;
 }
 
-QString State::getName() {
+QString State::getLabel() {
     return stateName;
 }
 

@@ -67,6 +67,7 @@ public:
     bool    isPunctuationToken();
     bool    isWhitespaceToken();
 
+    void    replaceToken(QString str);
     void    resetToken();
 
     void    stripWhitespace();

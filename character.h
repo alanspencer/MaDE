@@ -39,14 +39,14 @@ public:
     void setIsEnabled(bool enabled);
     void setIsEliminated(bool eliminate);
     void setIsOrdered(bool ordered);
-    void setName(QString name);
+    void setLabel(QString name);
     void setNotes(QString notes);
 
     int getID();
     bool getIsEnabled();
     bool getIsEliminated();
     bool getIsOrdered();
-    QString getName();
+    QString getLabel();
     QString getNotes();
 
     int countStates();
