@@ -23,11 +23,12 @@
 #include <QtGui>
 #include <QWidget>
 
-#include <taxon.h>
-#include <character.h>
-#include <cell.h>
-#include <mainwindow.h>
-#include <settings.h>
+#include "mainwindow.h"
+#include "settings.h"
+#include "taxon.h"
+#include "character.h"
+#include "cell.h"
+#include "equate.h"
 
 class MainWindow;
 class Settings;
@@ -81,6 +82,9 @@ public:
     bool characterEdit(int key, QString name, QString notes);
     bool charactersRemove(int column);
     int charactersCount();
+
+    int nextEquateID;
+    QList <Equate> equateList;
 
     int stateCount(int characterKey);
     State getState(int characterKey, int stateKey);
