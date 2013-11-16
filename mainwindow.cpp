@@ -669,7 +669,7 @@ void MainWindow::importNexus()
 
                 // Add Block Reader
                 nexusParser.addBlock("TAXA");
-                //nexusParser.addBlock("ASSUMPTIONS");
+                nexusParser.addBlock("ASSUMPTIONS");
                 nexusParser.addBlock("CHARACTERS");
                 //nexusParser.addBlock("NOTES");
 

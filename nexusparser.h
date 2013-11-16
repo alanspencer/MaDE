@@ -50,6 +50,7 @@
 #include "nexusparserreader.h"
 #include "nexusparsersetreader.h"
 #include "nexusparsertaxablock.h"
+#include "nexusparserassumptionsblock.h"
 #include "nexusparsercharactersblock.h"
 
 #endif // NEXUSPARSER_H

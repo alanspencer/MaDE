@@ -43,7 +43,8 @@ SOURCES += main.cpp\
     nexusparserreader.cpp \
     nexusparsersetreader.cpp \
     nexusparsertaxablock.cpp \
-    nexusparsertoken.cpp
+    nexusparsertoken.cpp \
+    nexusparserassumptionsblock.cpp
 
 HEADERS  += mainwindow.h \
     settings.h \
@@ -65,7 +66,8 @@ HEADERS  += mainwindow.h \
     nexusparsersetreader.h \
     nexusparsertaxablock.h \
     nexusparsertoken.h \
-    nexusparser.h
+    nexusparser.h \
+    nexusparserassumptionsblock.h
 
 FORMS    += mainwindow.ui \
     matrixTable.ui \

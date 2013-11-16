@@ -81,6 +81,7 @@ void NexusParserReader::loadBlocks()
 {
     NexusParserBlock *block;
     NexusParserTaxaBlock *taxaBlock;
+    NexusParserAssumptionsBlock *assumptionsBlock;
     NexusParserCharactersBlock *characterBlock;
     bool taxaBlockLoaded = false;
     bool assumptionsBlockLoaded = false;
@@ -91,8 +92,11 @@ void NexusParserReader::loadBlocks()
         if(blocksToLoad[i] == "TAXA") {
             block = taxaBlock = new NexusParserTaxaBlock(this);
             taxaBlockLoaded = true;
-        } else if (blocksToLoad[i] == "CHARACTERS" && taxaBlockLoaded) {
-            block = characterBlock = new NexusParserCharactersBlock(this, taxaBlock);
+        } else if (blocksToLoad[i] == "ASSUMPTIONS" && taxaBlockLoaded) {
+            block = assumptionsBlock = new NexusParserAssumptionsBlock(this, taxaBlock);
+            assumptionsBlockLoaded = true;
+        } else if (blocksToLoad[i] == "CHARACTERS" && taxaBlockLoaded && assumptionsBlockLoaded) {
+            block = characterBlock = new NexusParserCharactersBlock(this, taxaBlock, assumptionsBlock);
             charactersBlockLoaded = true;
         }
 

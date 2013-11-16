@@ -39,14 +39,15 @@
 
 #include "nexusparser.h"
 
-NexusParserCharactersBlock::NexusParserCharactersBlock(NexusParserReader *pointer, NexusParserTaxaBlock *tBlock)
+NexusParserCharactersBlock::NexusParserCharactersBlock(NexusParserReader *pointer, NexusParserTaxaBlock *tBlock, NexusParserAssumptionsBlock *aBlock)
 {
     Q_ASSERT(tBlock != NULL);
-    //assert(aBlock != NULL);
+    Q_ASSERT(aBlock != NULL);
 
     setNexusParserReader(pointer);
     blockID = "CHARACTERS";
     taxaBlock = tBlock;
+    assumptionsBlock = aBlock;
 
     reset();
 }

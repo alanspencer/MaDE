@@ -47,6 +47,7 @@ class NexusParserToken;
 class NexusParserBlock;
 class NexusParserException;
 class NexusParserTaxaBlock;
+class NexusParserAssumptionsBlock;
 class Character;
 class Equate;
 class Cell;
@@ -76,7 +77,7 @@ public:
         INDIVIDUALS
     };
 
-    NexusParserCharactersBlock(NexusParserReader *pointer, NexusParserTaxaBlock *tBlock);
+    NexusParserCharactersBlock(NexusParserReader *pointer, NexusParserTaxaBlock *tBlock, NexusParserAssumptionsBlock *aBlock);
     virtual ~NexusParserCharactersBlock();
 
     bool isEliminated(int origCharIndex);
@@ -105,7 +106,8 @@ protected:
     void    resetSymbols();
     void    buildCharPosArray(bool checkEliminated = false);
 
-    NexusParserTaxaBlock *taxaBlock;                    // pointer to the TAXA block in which taxon labels are stored
+    NexusParserTaxaBlock *taxaBlock;                    // pointer to the TAXA block
+    NexusParserAssumptionsBlock *assumptionsBlock;      // pointer to the ASSUMPTIONS block
 
     int nextCharacterID;                        // int to give each character a unique ID
     int characterAdd(QString characterLabel, bool isEliminated = false);    // Add a new character to the QList<Character> characterList.
