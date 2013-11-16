@@ -37,21 +37,21 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "ncl.h"
+#include "nexusparser.h"
 
-NxsCharactersBlock::NxsCharactersBlock(NxsReader *pointer, NxsTaxaBlock *tBlock)
+NexusParserCharactersBlock::NexusParserCharactersBlock(NexusParserReader *pointer, NexusParserTaxaBlock *tBlock)
 {
     Q_ASSERT(tBlock != NULL);
     //assert(aBlock != NULL);
 
-    setNxsReader(pointer);
+    setNexusParserReader(pointer);
     blockID = "CHARACTERS";
     taxaBlock = tBlock;
 
     reset();
 }
 
-NxsCharactersBlock::~NxsCharactersBlock()
+NexusParserCharactersBlock::~NexusParserCharactersBlock()
 {
     reset();
 
@@ -61,9 +61,9 @@ NxsCharactersBlock::~NxsCharactersBlock()
 }
 
 // Reset
-void NxsCharactersBlock::reset()
+void NexusParserCharactersBlock::reset()
 {
-    NxsBlock::reset();
+    NexusParserBlock::reset();
 
     ncharTotal = 0;
     nchar = 0;
@@ -80,14 +80,14 @@ void NxsCharactersBlock::reset()
     respectingCase = false;
     labels = true;
     tokens = false;
-    datatype = NxsCharactersBlock::standard;
+    datatype = NexusParserCharactersBlock::standard;
 
-    missing = nxs->defaultMissingCharacter;
-    gap = nxs->defaultGapCharacter;
-    matchchar = nxs->defaultMatchCharacter;
+    missing = nexusParser->defaultMissingCharacter;
+    gap = nexusParser->defaultGapCharacter;
+    matchchar = nexusParser->defaultMatchCharacter;
 
     resetSymbols();
-    equates.clear();
+    equatesList.clear();
 
     items.clear();
     items.append("STATES");
@@ -99,10 +99,10 @@ void NxsCharactersBlock::reset()
  * Read Function
  *-----------------------------------------------------------------------------------*/
 
-// This function provides the ability to read everything following the block name (which is read by the NxsReader
+// This function provides the ability to read everything following the block name (which is read by the NexusParserReader
 // object) to the END or ENDBLOCK statement. Characters are read from the input stream `in'. Overrides the abstract
 // virtual function in the base class.
-void NxsCharactersBlock::read(NxsToken &token)
+void NexusParserCharactersBlock::read(NexusParserToken &token)
 {
     isEmpty = false;
     demandEndSemicolon(token, QString("BEGIN %1").arg(blockID));
@@ -112,11 +112,11 @@ void NxsCharactersBlock::read(NxsToken &token)
     for(;;)
     {
         token.getNextToken();
-        NxsBlock::NxsCommandResult result = handleBasicBlockCommands(token);
-        if (result == NxsBlock::NxsCommandResult(STOP_PARSING_BLOCK)){
+        NexusParserBlock::NexusParserCommandResult result = handleBasicBlockCommands(token);
+        if (result == NexusParserBlock::NexusParserCommandResult(STOP_PARSING_BLOCK)){
             return;
         }
-        if (result != NxsBlock::NxsCommandResult(HANDLED_COMMAND)) {
+        if (result != NexusParserBlock::NexusParserCommandResult(HANDLED_COMMAND)) {
             if (token.equals("DIMENSIONS")) {
                 handleDimensions(token, "NEWTAXA", "NTAX", "NCHAR");
             } else if (token.equals("FORMAT")) {
@@ -140,8 +140,8 @@ void NxsCharactersBlock::read(NxsToken &token)
                 } while (!token.getAtEndOfFile() && !token.equals(";"));
 
                 if (token.getAtEndOfFile()){
-                    errorMessage = "Unexpected end of file encountered";
-                    throw NxsException(errorMessage,
+                    errorMessage = "Quick, hide under the desk we have a problem! Unexpected end of file encountered";
+                    throw NexusParserException(errorMessage,
                                        token.getFilePosition(),
                                        token.getFileLine(),
                                        token.getFileColumn());
@@ -160,9 +160,9 @@ void NxsCharactersBlock::read(NxsToken &token)
 // `ntaxLabel' and `ncharLabel' are simply "NEWTAXA", "NTAX" and "NCHAR" for this class, but may be different for
 // derived classes that use `newtaxa', `ntax' and `nchar' for other things (e.g., ntax is number of populations in
 // an ALLELES block)
-void NxsCharactersBlock::handleDimensions(NxsToken &token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel)
+void NexusParserCharactersBlock::handleDimensions(NexusParserToken &token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel)
 {
-    nxs->NxsLogMesssage(
+    nexusParser->logMesssage(
                 QString("%1 BLOCK: found command \"DIMENSIONS\" on line %2, now looking for \"%3\" or \"%4\" or \"%5\"...")
                 .arg(blockID)
                 .arg(token.getFileLine())
@@ -177,7 +177,7 @@ void NxsCharactersBlock::handleDimensions(NxsToken &token, QString newtaxaLabel,
         if (token.equals(newtaxaLabel)) {
             newtaxa = true;
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"%2\" on line %3.")
                         .arg(blockID)
                         .arg(newtaxaLabel)
@@ -187,7 +187,7 @@ void NxsCharactersBlock::handleDimensions(NxsToken &token, QString newtaxaLabel,
             demandEquals(token, "in DIMENSIONS command");
             ntax = demandPositiveInt(token, ntaxLabel);
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"%2\" on line %3. NTAX = %4.")
                         .arg(blockID)
                         .arg(ntaxLabel)
@@ -206,7 +206,7 @@ void NxsCharactersBlock::handleDimensions(NxsToken &token, QString newtaxaLabel,
                     errorMessage += " block must be less than or equal to NTAX in TAXA block\nNote: one circumstance that can cause this error is \nforgetting to specify ";
                     errorMessage += ntaxLabel;
                     errorMessage += " in DIMENSIONS command when \na TAXA block has not been provided";
-                    throw NxsException(errorMessage,
+                    throw NexusParserException(errorMessage,
                                        token.getFilePosition(),
                                        token.getFileLine(),
                                        token.getFileColumn());
@@ -217,7 +217,7 @@ void NxsCharactersBlock::handleDimensions(NxsToken &token, QString newtaxaLabel,
             nchar = demandPositiveInt(token, ncharLabel);
             ncharTotal = nchar;
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"%2\" on line %3. NCHAR = %4.")
                         .arg(blockID)
                         .arg(ncharLabel)
@@ -236,9 +236,9 @@ void NxsCharactersBlock::handleDimensions(NxsToken &token, QString newtaxaLabel,
 
 // Called when FORMAT command needs to be parsed from within the CHARACTERS block. Deals with everything after the
 // token FORMAT up to and including the semicolon that terminates the FORMAT command.
-void NxsCharactersBlock::handleFormat(NxsToken &token)
+void NexusParserCharactersBlock::handleFormat(NexusParserToken &token)
 {
-    nxs->NxsLogMesssage(
+    nexusParser->logMesssage(
                 QString("%1 BLOCK: found command \"FORMAT\" on line %2...")
                 .arg(blockID)
                 .arg(token.getFileLine())
@@ -276,13 +276,13 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage += " is not a valid DATATYPE within a ";
                 errorMessage += blockID;
                 errorMessage += " block";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
             }
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"DATATYPE\" on line %2. DATATYPE = %3.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -290,7 +290,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                         );
 
             if (standardDataTypeAssumed && datatype != standard) {
-                throw NxsException("DATATYPE must be specified first in FORMAT command",
+                throw NexusParserException("DATATYPE must be specified first in FORMAT command",
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -304,13 +304,13 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 
         } else if (token.equals("RESPECTCASE")) {
             if (ignoreCaseAssumed) {
-                throw NxsException("RESPECTCASE must be specified before MISSING, GAP, SYMBOLS, and MATCHCHAR in FORMAT command",
+                throw NexusParserException("RESPECTCASE must be specified before MISSING, GAP, SYMBOLS, and MATCHCHAR in FORMAT command",
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
             }
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"RESPECTCASE\" on line %2.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -328,7 +328,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "MISSING symbol should be a single character, but ";
                 errorMessage += token.getToken();
                 errorMessage += " was specified";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -336,7 +336,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "MISSING symbol specified cannot be a punctuation token (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified)";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -344,7 +344,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "MISSING symbol specified cannot be a whitespace character (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified)";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -352,7 +352,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 
             missing = token.getToken().at(0);
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"MISSING\" on line %2. MISSING = %3.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -371,7 +371,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "GAP symbol should be a single character, but ";
                 errorMessage += token.getToken();
                 errorMessage += " was specified";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -379,7 +379,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "GAP symbol specified cannot be a punctuation token (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified)";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -387,7 +387,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "GAP symbol specified cannot be a whitespace character (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified)";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -395,7 +395,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 
             gap = token.getToken().at(0);
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"GAP\" on line %2. GAP = %3.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -405,8 +405,8 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
             ignoreCaseAssumed = true;
             standardDataTypeAssumed = true;
         } else if (token.equals("SYMBOLS")) {
-            if (datatype == NxsCharactersBlock::continuous) {
-                throw NxsException("SYMBOLS subcommand not allowed for DATATYPE=CONTINUOUS",
+            if (datatype == NexusParserCharactersBlock::continuous) {
+                throw NexusParserException("SYMBOLS subcommand not allowed for DATATYPE=CONTINUOUS",
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -415,29 +415,29 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
             int numDefStates;
             int maxNewStates;
             switch(datatype){
-                case NxsCharactersBlock::dna:
-                case NxsCharactersBlock::rna:
-                case NxsCharactersBlock::nucleotide:
+                case NexusParserCharactersBlock::dna:
+                case NexusParserCharactersBlock::rna:
+                case NexusParserCharactersBlock::nucleotide:
                     numDefStates = 4;
-                    maxNewStates = NXS_MAX_STATES-numDefStates;
+                    maxNewStates = NEXUS_MAX_STATES-numDefStates;
                     break;
 
-                case NxsCharactersBlock::protein:
+                case NexusParserCharactersBlock::protein:
                     numDefStates = 21;
-                    maxNewStates = NXS_MAX_STATES-numDefStates;
+                    maxNewStates = NEXUS_MAX_STATES-numDefStates;
                     break;
 
                 default:
                     numDefStates = 0;
                     symbols.clear();
-                    maxNewStates = NXS_MAX_STATES-numDefStates;
+                    maxNewStates = NEXUS_MAX_STATES-numDefStates;
                     break;
             }
 
             demandEquals(token, " after keyword SYMBOLS");
 
             // This should be the symbols list
-            token.setLabileFlagBit(NxsToken::doubleQuotedToken);
+            token.setLabileFlagBit(NexusParserToken::doubleQuotedToken);
             token.getNextToken();
             token.stripWhitespace();
 
@@ -449,7 +449,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage += " new states but only ";
                 errorMessage += maxNewStates;
                 errorMessage += " new states allowed for this DATATYPE";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -465,7 +465,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                     errorMessage = "The character ";
                     errorMessage += t[i];
                     errorMessage += " defined in SYMBOLS has already been predefined for this DATATYPE";
-                    throw NxsException(errorMessage,
+                    throw NexusParserException(errorMessage,
                                        token.getFilePosition(),
                                        token.getFileLine(),
                                        token.getFileColumn());
@@ -480,7 +480,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 symbolsString.append(t.at(i));
             }
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"SYMBOLS\" on line %2. SYMBOLS = %3.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -491,8 +491,8 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
             standardDataTypeAssumed = true;
         } else if (token.equals("EQUATE")) {
 
-            if (datatype == NxsCharactersBlock::continuous) {
-                throw NxsException("EQUATE subcommand not allowed for DATATYPE=CONTINUOUS",
+            if (datatype == NexusParserCharactersBlock::continuous) {
+                throw NexusParserException("EQUATE subcommand not allowed for DATATYPE=CONTINUOUS",
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -507,7 +507,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "Expecting '\"' after keyword EQUATE but found ";
                 errorMessage += token.getToken();
                 errorMessage += " instead";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -528,7 +528,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                     errorMessage = "Expecting single-character EQUATE symbol but found ";
                     errorMessage += token.getToken();
                     errorMessage += " instead";
-                    throw NxsException(errorMessage,
+                    throw NexusParserException(errorMessage,
                                        token.getFilePosition(),
                                        token.getFileLine(),
                                        token.getFileColumn());
@@ -563,26 +563,26 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                     errorMessage = "EQUATE symbol specified (";
                     errorMessage += token.getToken();
                     errorMessage += ") is not valid; must not be same as missing, matchchar, gap, state symbols, or any of the following: ()[]{}/\\,;:=*'\"`<>^";
-                    throw NxsException(errorMessage,
+                    throw NexusParserException(errorMessage,
                                        token.getFilePosition(),
                                        token.getFileLine(),
                                        token.getFileColumn());
                 }
 
-                QString t1 = token.getToken();
+                QString symbol = token.getToken();
                 demandEquals(token, " in EQUATE definition");
 
                 // This should be the token to be substituted in for the equate symbol
-                token.setLabileFlagBit(NxsToken::parentheticalToken);
-                token.setLabileFlagBit(NxsToken::curlyBracketedToken);
+                token.setLabileFlagBit(NexusParserToken::parentheticalToken);
+                token.setLabileFlagBit(NexusParserToken::curlyBracketedToken);
                 token.getNextToken();
-                QString t2 = token.getToken();
+                QString equivalent = token.getToken();
 
                 // Add the new equate association to the equates list
-                equates[t1] = t2;
+                equateAdd(symbol, equivalent);
             }
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"EQUATE\" on line %2.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -599,7 +599,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "MATCHCHAR symbol should be a single character, but ";
                 errorMessage += token.getToken();
                 errorMessage += " was specified";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -607,7 +607,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "MATCHCHAR symbol specified cannot be a punctuation token (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified) ";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -615,7 +615,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 errorMessage = "MATCHCHAR symbol specified cannot be a whitespace character (";
                 errorMessage += token.getToken();
                 errorMessage += " was specified)";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -623,7 +623,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 
             matchchar = token.getToken().at(0);
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"MATCHCHAR\" on line %2. MATCHCHAR = %3.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -635,7 +635,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
         } else if (token.equals("LABELS")) {
             labels = true;
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"LABELS\" on line %2.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -645,7 +645,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
         } else if (token.equals("NOLABELS")) {
             labels = false;
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"NOLABELS\" on line %2.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -655,7 +655,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
         } else if (token.equals("TRANSPOSE")) {
             transposing = true;
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"TRANSPOSE\" on line %2.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -665,7 +665,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
         } else if (token.equals("INTERLEAVE")) {
             interleaving = true;
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"INTERLEAVE\" on line %2.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -678,7 +678,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 
             // This should be STATES (no other item is supported at this time)
             token.getNextToken();
-            if (datatype == NxsCharactersBlock::continuous){
+            if (datatype == NexusParserCharactersBlock::continuous){
                 QString str;
                 if (token.equals("(")){
                     token.getNextToken();
@@ -693,7 +693,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 }
             } else {
                 if (!token.equals("STATES")) {
-                    throw NxsException("Sorry, only ITEMS=STATES is supported for discrete datatypes at this time",
+                    throw NexusParserException("Sorry, only ITEMS=STATES is supported for discrete datatypes at this time",
                                        token.getFilePosition(),
                                        token.getFileLine(),
                                        token.getFileColumn());
@@ -702,7 +702,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
                 items.append("STATES");
             }
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"ITEMS\" on line %2.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -718,24 +718,24 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
             if (token.equals("STATESPRESENT")) {
                 statesFormat = STATES_PRESENT;
             } else {
-                if (datatype == NxsCharactersBlock::continuous) {
+                if (datatype == NexusParserCharactersBlock::continuous) {
                     if (token.equals("INDIVIDUALS")) {
                         statesFormat = INDIVIDUALS;
                     } else {
-                        throw NxsException("Sorry, only STATESFORMAT=STATESPRESENT or STATESFORMAT=INDIVIDUALS are supported for continuous datatypes at this time",
+                        throw NexusParserException("Sorry, only STATESFORMAT=STATESPRESENT or STATESFORMAT=INDIVIDUALS are supported for continuous datatypes at this time",
                                            token.getFilePosition(),
                                            token.getFileLine(),
                                            token.getFileColumn());
                     }
                 } else {
-                    throw NxsException("Sorry, only STATESFORMAT=STATESPRESENT supported for discrete datatypes at this time",
+                    throw NexusParserException("Sorry, only STATESFORMAT=STATESPRESENT supported for discrete datatypes at this time",
                                        token.getFilePosition(),
                                        token.getFileLine(),
                                        token.getFileColumn());
                 }
             }
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"STATESFORMAT\" on line %2.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -745,7 +745,7 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
         } else if (token.equals("TOKENS")) {
             tokens = true;
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"TOKENS\" on line %2.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -753,15 +753,15 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 
             standardDataTypeAssumed = true;
         } else if (token.equals("NOTOKENS")) {
-            if (datatype == NxsCharactersBlock::continuous) {
-                throw NxsException("NOTOKENS is not allowed for the CONTINUOUS datatype",
+            if (datatype == NexusParserCharactersBlock::continuous) {
+                throw NexusParserException("NOTOKENS is not allowed for the CONTINUOUS datatype",
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
             }
             tokens = false;
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: found subcommand \"NOTOKENS\" on line %2.")
                         .arg(blockID)
                         .arg(token.getFileLine())
@@ -775,13 +775,13 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 
     // Perform some last checks before leaving the FORMAT command
     if (!tokens && datatype == continuous) {
-        throw NxsException("TOKENS must be defined for DATATYPE=CONTINUOUS",
+        throw NexusParserException("TOKENS must be defined for DATATYPE=CONTINUOUS",
                            token.getFilePosition(),
                            token.getFileLine(),
                            token.getFileColumn());
     }
     if (tokens && (datatype == dna || datatype == rna || datatype == nucleotide)) {
-        throw NxsException("TOKENS not allowed for the DATATYPEs DNA, RNA, or NUCLEOTIDE",
+        throw NexusParserException("TOKENS not allowed for the DATATYPEs DNA, RNA, or NUCLEOTIDE",
                            token.getFilePosition(),
                            token.getFileLine(),
                            token.getFileColumn());
@@ -796,17 +796,17 @@ void NxsCharactersBlock::handleFormat(NxsToken &token)
 // and 6 (not 4, 5, 6 and 7). It is assumed that the ELIMINATE command comes before character labels and/or character
 // state labels have been specified; an error message is generated if the user attempts to use ELIMINATE after a
 // CHARLABELS, CHARSTATELABELS, or STATELABELS command.
-void NxsCharactersBlock::handleEliminate(NxsToken &token)
+void NexusParserCharactersBlock::handleEliminate(NexusParserToken &token)
 {
-    nxs->NxsLogMesssage(
+    nexusParser->logMesssage(
                 QString("%1 BLOCK: found command \"ELIMINATE\" on line %2...")
                 .arg(blockID)
                 .arg(token.getFileLine())
                 );
 
-    // Construct an object of type NxsSetReader, then call its run function
+    // Construct an object of type NexusParserSetReader, then call its run function
     // to store the set in the eliminated set
-    NxsSetReader setReader(token, ncharTotal, eliminated, *this, NxsSetReader::charset);
+    NexusParserSetReader setReader(token, ncharTotal, eliminated, *this, NexusParserSetReader::charset);
     setReader.run();
 
     Q_ASSERT(eliminated.count() <= ncharTotal);
@@ -814,11 +814,11 @@ void NxsCharactersBlock::handleEliminate(NxsToken &token)
     nchar = ncharTotal - eliminated.count();
 
     if (nchar != ncharTotal && (characterList.count() > 0)) {
-        throw NxsException("The ELIMINATE command must appear before character (or character state) labels are specified", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+        throw NexusParserException("The ELIMINATE command must appear before character (or character state) labels are specified", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
     }
 
     if (!charPos.isEmpty()) {
-        throw NxsException("Only one ELIMINATE command is allowed, and it must appear before the MATRIX command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+        throw NexusParserException("Only one ELIMINATE command is allowed, and it must appear before the MATRIX command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
     }
 
     // Creates a charPos Map containing all characters (thoses that have been eliminated have a value of INT_MAX)
@@ -827,9 +827,9 @@ void NxsCharactersBlock::handleEliminate(NxsToken &token)
 
 // Called when TAXLABELS command needs to be parsed from within the CHARACTERS block. Deals with everything after the
 // token TAXLABELS up to and including the semicolon that terminates the TAXLABELS command.
-void NxsCharactersBlock::handleTaxlabels(NxsToken &token)
+void NexusParserCharactersBlock::handleTaxlabels(NexusParserToken &token)
 {
-    nxs->NxsLogMesssage(
+    nexusParser->logMesssage(
                 QString("%1 BLOCK: found command \"TAXLABELS\" on line %2...")
                 .arg(blockID)
                 .arg(token.getFileLine())
@@ -839,7 +839,7 @@ void NxsCharactersBlock::handleTaxlabels(NxsToken &token)
         errorMessage = "NEWTAXA must have been specified in DIMENSIONS command to use the TAXLABELS command in a ";
         errorMessage += blockID;
         errorMessage += " block";
-        throw NxsException(errorMessage,
+        throw NexusParserException(errorMessage,
                            token.getFilePosition(),
                            token.getFileLine(),
                            token.getFileColumn());
@@ -856,12 +856,12 @@ void NxsCharactersBlock::handleTaxlabels(NxsToken &token)
             // Check to make sure user is not trying to read in more
             // taxon labels than there are taxa
             if (taxaBlock->getNumTaxonLabels() > ntaxTotal){
-                throw NxsException("Number of taxon labels exceeds NTAX specified in DIMENSIONS command",
+                throw NexusParserException("Number of taxon labels exceeds NTAX specified in DIMENSIONS command",
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
             }
-            // Add to NxsTaxaBlock Class
+            // Add to NexusParserTaxaBlock Class
             taxaBlock->taxonAdd(token.getToken());
         }
     }
@@ -870,7 +870,7 @@ void NxsCharactersBlock::handleTaxlabels(NxsToken &token)
     // specified in this CHARACTERS block rather than in a preceding TAXA block is lost. This will only be
     // important if we wish to recreate the original data file, which I don't anticipate anyone doing with
     // this code (too difficult to remember all comments, the order of blocks in the file, etc.) - better to
-    // get a copy of the file data from the QString NxsToken::nexusData and output it somewhere.
+    // get a copy of the file data from the QString NexusParserToken::nexusData and output it somewhere.
     newtaxa = false;
 }
 
@@ -879,9 +879,9 @@ void NxsCharactersBlock::handleTaxlabels(NxsToken &token)
 // Resulting `charLabels' list will store labels only for characters that have not been eliminated, and likewise for
 // `charStates'. Specifically, `charStates[0]' refers to the vector of character state labels for the first
 // non-eliminated character.
-void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
+void NexusParserCharactersBlock::handleCharstatelabels(NexusParserToken &token)
 {
-    nxs->NxsLogMesssage(
+    nexusParser->logMesssage(
                 QString("%1 BLOCK: found command \"CHARSTATELABELS\" on line %2...")
                 .arg(blockID)
                 .arg(token.getFileLine())
@@ -924,7 +924,7 @@ void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
             errorMessage = "Invalid character number (";
             errorMessage += token.getToken();
             errorMessage += ") found in CHARSTATELABELS command (either out of range or not interpretable as an integer)";
-            throw NxsException(errorMessage,
+            throw NexusParserException(errorMessage,
                                token.getFilePosition(),
                                token.getFileLine(),
                                token.getFileColumn());
@@ -936,7 +936,7 @@ void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
             QString characterLabel = QString("Character %1").arg(n);
             if (!isEliminated(currChar - 1)) {
                 characterAdd(characterLabel, false);
-                nxs->NxsLogMesssage(
+                nexusParser->logMesssage(
                             QString("%1 BLOCK: created character label [C%2] -> %3")
                             .arg(blockID)
                             .arg(n)
@@ -944,7 +944,7 @@ void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
                             );
             } else {
                 characterAdd(characterLabel, true);
-                nxs->NxsLogMesssage(
+                nexusParser->logMesssage(
                             QString("%1 BLOCK: created character label [C%2] [ELIMINATED] -> %3")
                             .arg(blockID)
                             .arg(n)
@@ -962,7 +962,7 @@ void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
         QString characterLabel = token.getToken();
         if (!isEliminated(currChar - 1)) {
             characterAdd(characterLabel, false);
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: extracted character label [C%2] -> %3")
                         .arg(blockID)
                         .arg(n)
@@ -970,7 +970,7 @@ void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
                         );
         } else {
             characterAdd(characterLabel, true);
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: extracted character label [C%2] [ELIMINATED] -> %3")
                         .arg(blockID)
                         .arg(n)
@@ -988,7 +988,7 @@ void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
                 errorMessage = "Expecting a comma or semicolon here, but found (";
                 errorMessage += token.getToken();
                 errorMessage += ") instead";
-                throw NxsException(errorMessage,
+                throw NexusParserException(errorMessage,
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -1021,7 +1021,7 @@ void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
             }
 
             if (datatype == continuous){
-                throw NxsException("State Labels cannot be specified when the datatype is continuous",
+                throw NexusParserException("State Labels cannot be specified when the datatype is continuous",
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -1032,7 +1032,7 @@ void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
             QString stateSymbol = QString(symbols.at(s));
             characterList[n].addState(stateSymbol, stateLabel, "");
 
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: extracted character [C%2] state label -> [%3] %4")
                         .arg(blockID)
                         .arg(n)
@@ -1051,9 +1051,9 @@ void NxsCharactersBlock::handleCharstatelabels(NxsToken &token)
 // Called when CHARLABELS command needs to be parsed from within the DIMENSIONS block. Deals with everything after
 // the token CHARLABELS up to and including the semicolon that terminates the CHARLABELS command. If an ELIMINATE
 // command has been processed, labels for eliminated characters will not be stored.
-void NxsCharactersBlock::handleCharlabels(NxsToken &token)
+void NexusParserCharactersBlock::handleCharlabels(NexusParserToken &token)
 {
-    nxs->NxsLogMesssage(
+    nexusParser->logMesssage(
                 QString("%1 BLOCK: found command \"CHARLABELS\" on line %2...")
                 .arg(blockID)
                 .arg(token.getFileLine())
@@ -1081,7 +1081,7 @@ void NxsCharactersBlock::handleCharlabels(NxsToken &token)
 
             // Check to make sure user is not trying to read in more character labels than there are characters
             if (n > ncharTotal){
-                throw NxsException("Number of character labels exceeds NCHAR specified in DIMENSIONS command",
+                throw NexusParserException("Number of character labels exceeds NCHAR specified in DIMENSIONS command",
                                    token.getFilePosition(),
                                    token.getFileLine(),
                                    token.getFileColumn());
@@ -1090,7 +1090,7 @@ void NxsCharactersBlock::handleCharlabels(NxsToken &token)
             QString characterLabel = token.getToken();
             if (!isEliminated(n - 1)) {
                 characterAdd(characterLabel, false);
-                nxs->NxsLogMesssage(
+                nexusParser->logMesssage(
                             QString("%1 BLOCK: extracted character label [C%2] -> %3")
                             .arg(blockID)
                             .arg(n)
@@ -1098,7 +1098,7 @@ void NxsCharactersBlock::handleCharlabels(NxsToken &token)
                             );
             } else {
                 characterAdd(characterLabel, true);
-                nxs->NxsLogMesssage(
+                nexusParser->logMesssage(
                             QString("%1 BLOCK: extracted character label [C%2] [ELIMINATED] -> %3")
                             .arg(blockID)
                             .arg(n)
@@ -1113,10 +1113,10 @@ void NxsCharactersBlock::handleCharlabels(NxsToken &token)
 // Called when STATELABELS command needs to be parsed from within the DIMENSIONS block. Deals with everything after
 // the token STATELABELS up to and including the semicolon that terminates the STATELABELS command. Note that the
 // numbers of states are shifted back one before being stored so that the character numbers in the NxsStringVectorMap
-// objects are 0-offset rather than being 1-offset as in the NxsReader data file.
-void NxsCharactersBlock::handleStatelabels(NxsToken &token)
+// objects are 0-offset rather than being 1-offset as in the NexusParserReader data file.
+void NexusParserCharactersBlock::handleStatelabels(NexusParserToken &token)
 {
-    nxs->NxsLogMesssage(
+    nexusParser->logMesssage(
                 QString("%1 BLOCK: found command \"STATELABELS\" on line %2...")
                 .arg(blockID)
                 .arg(token.getFileLine())
@@ -1125,14 +1125,14 @@ void NxsCharactersBlock::handleStatelabels(NxsToken &token)
     bool semicolonFoundInInnerLoop = false;
 
     if (datatype == continuous){
-        throw NxsException("STATELABELS cannot be specified when the datatype is continuous",
+        throw NexusParserException("STATELABELS cannot be specified when the datatype is continuous",
                            token.getFilePosition(),
                            token.getFileLine(),
                            token.getFileColumn());
     }
 
     if (characterList.count() != ncharTotal) {
-        throw NxsException("STATELABELS cannot be specified before the CHARLABELS command",
+        throw NexusParserException("STATELABELS cannot be specified before the CHARLABELS command",
                            token.getFilePosition(),
                            token.getFileLine(),
                            token.getFileColumn());
@@ -1161,7 +1161,7 @@ void NxsCharactersBlock::handleStatelabels(NxsToken &token)
             errorMessage = "Invalid character number (";
             errorMessage += token.getToken();
             errorMessage += ") found in STATELABELS command (either out of range or not interpretable as an integer)";
-            throw NxsException(errorMessage,
+            throw NexusParserException(errorMessage,
                                token.getFilePosition(),
                                token.getFileLine(),
                                token.getFileColumn());
@@ -1185,7 +1185,7 @@ void NxsCharactersBlock::handleStatelabels(NxsToken &token)
             QString stateLabel = token.getToken();
             QString stateSymbol = QString(symbols.at(s));
             characterList[n-1].addState(stateSymbol, stateLabel, "");
-            nxs->NxsLogMesssage(
+            nexusParser->logMesssage(
                         QString("%1 BLOCK: extracted character [C%2] state label -> [%3] %4")
                         .arg(blockID)
                         .arg(n)
@@ -1199,9 +1199,9 @@ void NxsCharactersBlock::handleStatelabels(NxsToken &token)
 
 // Called when MATRIX command needs to be parsed from within the CHARACTERS block. Deals with everything after the
 // token MATRIX up to and including the semicolon that terminates the MATRIX command.
-void NxsCharactersBlock::handleMatrix(NxsToken &token)
+void NexusParserCharactersBlock::handleMatrix(NexusParserToken &token)
 {
-    nxs->NxsLogMesssage(
+    nexusParser->logMesssage(
                 QString("%1 BLOCK: found command \"MATRIX\" on line %2...")
                 .arg(blockID)
                 .arg(token.getFileLine())
@@ -1211,7 +1211,7 @@ void NxsCharactersBlock::handleMatrix(NxsToken &token)
        errorMessage = "Must precede ";
        errorMessage += blockID;
        errorMessage += " block with a TAXA block or specify NEWTAXA and NTAX in the DIMENSIONS command";
-       throw NxsException(errorMessage,
+       throw NexusParserException(errorMessage,
                           token.getFilePosition(),
                           token.getFileLine(),
                           token.getFileColumn());
@@ -1220,12 +1220,6 @@ void NxsCharactersBlock::handleMatrix(NxsToken &token)
     if (ntaxTotal == 0) {
         ntaxTotal = taxaBlock->getNumTaxonLabels();
     }
-
-    //if (!discreteCharMatrix->isEmpty()){
-    //    discreteCharMatrix->clear();
-    //}
-
-    //continuousCharMatrix.clear();
 
     // Initialize the QLists activeTaxon and activeChar. All characters and all taxa are initially active.
     for (int i = 0; i < ntax; i++){
@@ -1240,7 +1234,7 @@ void NxsCharactersBlock::handleMatrix(NxsToken &token)
     // in the CHARACTERS block DIMENSIONS command.	If an ELIMINATE command is
     // processed, however, nchar < ncharTotal.	Note that the ELIMINATE command
     // will have already been read by now, and the eliminated character numbers
-    // will be stored in the NxsIntSetMap eliminated.
+    // will be stored in the QMap<int, int> eliminated.
     // Note that if an ELIMINATE command has been read, charPos will have already
     // been created; thus, we only need to allocate and initialize charPos if user
     // did not specify an ELIMINATE command
@@ -1261,33 +1255,30 @@ void NxsCharactersBlock::handleMatrix(NxsToken &token)
         taxonPos.insert(i, INT_MAX);
     }
 
-    if (datatype == NxsCharactersBlock::continuous){
-        nxs->NxsLogMesssage(
+    if (datatype == NexusParserCharactersBlock::continuous){
+        nexusParser->logMesssage(
                     QString("%1 BLOCK: MATRIX: is made of CONTINUOUS data.")
                     .arg(blockID)
                     );
-        //ContinuousCharRow row(nchar);
-        //continuousCharMatrix.assign(ntax, row);
     } else {
-        nxs->NxsLogMesssage(
+        nexusParser->logMesssage(
                     QString("%1 BLOCK: MATRIX: is made of DISCRETE data.")
                     .arg(blockID)
                     );
-        //discreteCharMatrix = new NxsDiscreteMatrix(ntax, nchar);
     }
 
     if (transposing){
-        nxs->NxsLogMesssage(
-                    QString("%1 BLOCK: MATRIX: is TRANSPOSED, loading tranposing matrix reader...")
+        nexusParser->logMesssage(
+                    QString("%1 BLOCK: MATRIX: is TRANSPOSED.")
                     .arg(blockID)
                     );
-        //handleTransposedMatrix(token)
+        handleTransposedMatrix(token);
     } else {
-        nxs->NxsLogMesssage(
-                    QString("%1 BLOCK: MATRIX: is STANDARD, loading standard matrix reader...")
+        nexusParser->logMesssage(
+                    QString("%1 BLOCK: MATRIX: is STANDARD.")
                     .arg(blockID)
                     );
-        //handleStandardMatrix(token);
+        handleStandardMatrix(token);
     }
 
     demandEndSemicolon(token, "MATRIX");
@@ -1300,13 +1291,382 @@ void NxsCharactersBlock::handleMatrix(NxsToken &token)
     //assumptionsBlock->setCallback(this);
 }
 
+// Called from HandleMatrix function to read in a standard (i.e., non-transposed) matrix. Interleaving, if
+// applicable, is dealt with herein.
+void NexusParserCharactersBlock::handleStandardMatrix(NexusParserToken &token)
+{
+    Q_ASSERT(!taxonPos.isEmpty());
+    Q_ASSERT(!taxonPos.isEmpty());
+
+    nexusParser->logMesssage(
+                QString("%1 BLOCK: MATRIX: running standard matrix reader...")
+                .arg(blockID)
+                );
+
+    int page = 0;               // current page
+    int currentCharacter = 0;   // current character
+    int currentTaxon = 0;       // current taxon
+    int firstChararcter = 0;    // first character
+    int lastChararcter = ncharTotal;     // last character
+    int nextFirst = 0;
+
+    for (;;) // loop #1
+    {
+        // Beginning of loop through taxa
+        for (currentTaxon = 0; currentTaxon < ntax; currentTaxon++) // loop #2
+        {
+            if(labels) {
+                // This should be the taxon label
+                token.getNextToken();
+
+                if (page == 0 && newtaxa) {
+                    // This section:
+                    // - labels provided
+                    // - on first (or only) interleave page
+                    // - no previous TAXA block
+
+                    // Check for duplicate taxon names
+                    if (taxaBlock->taxonIsDefined(token.getToken())) {
+                        errorMessage = "Data for this taxon (";
+                        errorMessage += token.getToken();
+                        errorMessage += ") has already been saved";
+                        throw NexusParserException(errorMessage,
+                                           token.getFilePosition(),
+                                           token.getFileLine(),
+                                           token.getFileColumn());
+                    }
+
+                    // Labels provided and not already stored in the taxa block with the TAXLABELS command; taxaBlock->reset()
+                    // and taxaBlock->setNTax() have were already called, however, when the NTAX subcommand was processed.
+                    // Order of occurrence in TAXA block same as row in matrix
+                    QString currentToken = token.getToken();
+                    int positionInTaxaBlockList = taxaBlock->taxonAdd(currentToken);
+
+                    nexusParser->logMesssage(
+                                QString("%1 BLOCK: MATRIX: found taxon [T%2] \"%3\". Attempting to extract chararcter states...")
+                                .arg(blockID)
+                                .arg(positionInTaxaBlockList+1)
+                                .arg(currentToken)
+                                );
+
+                    taxonPos.insert(positionInTaxaBlockList, currentTaxon);
+                } else {
+                    // This section:
+                    // - labels provided
+                    // - TAXA block provided or has been created already
+                    // - may be on any (interleave) page
+
+                    // Cannot assume taxon in same position in taxa block. Will need to look up current positions and move if needed.
+                    int positionInTaxaBlockList;
+                    QString currentToken = token.getToken();
+
+                    try {
+                        positionInTaxaBlockList = taxaBlock->taxonFind(currentToken);
+                    } catch (NexusParserTaxaBlock::NexusParserX_NoSuchTaxon) {
+                        if (token.equals(";") && currentTaxon == 0) {
+                            errorMessage = "Unexpected ; (after only ";
+                            errorMessage += currentCharacter;
+                            errorMessage += " characters were read)";
+                        } else {
+                            errorMessage = "Could not find taxon named ";
+                            errorMessage += currentToken;
+                            errorMessage += " among stored taxon labels";
+                        }
+                        throw NexusParserException(errorMessage,
+                                           token.getFilePosition(),
+                                           token.getFileLine(),
+                                           token.getFileColumn());
+                    }
+
+                    nexusParser->logMesssage(
+                                QString("%1 BLOCK: MATRIX: found taxon [T%2] \"%3\". Attempting to extract chararcter states...")
+                                .arg(blockID)
+                                .arg(positionInTaxaBlockList+1)
+                                .arg(currentToken)
+                                );
+
+                    if (page == 0) {
+                        // Make sure user has not duplicated data for a single taxon
+                        if (taxonPos[positionInTaxaBlockList] != INT_MAX) {
+                            errorMessage = "Data for this taxon (";
+                            errorMessage += token.getToken();
+                            errorMessage += ") has already been saved";
+                            throw NexusParserException(errorMessage,
+                                               token.getFilePosition(),
+                                               token.getFileLine(),
+                                               token.getFileColumn());
+                        }
+
+
+                        // Make sure user has kept same relative ordering of taxa in both the TAXA block and the CHARACTERS block
+                        if (positionInTaxaBlockList != currentTaxon) {
+                            throw NexusParserException("Relative order of taxa must be the same in both the TAXA and CHARACTERS blocks",
+                                               token.getFilePosition(),
+                                               token.getFileLine(),
+                                               token.getFileColumn());
+                        }
+                        taxonPos.insert(currentTaxon, positionInTaxaBlockList);
+                    } else {
+                        // Make sure user has kept the ordering of taxa the same from one interleave page to the next
+                        if (taxonPos[positionInTaxaBlockList] != currentTaxon) {
+                            throw NexusParserException("Ordering of taxa must be identical to that in first interleave page",
+                                               token.getFilePosition(),
+                                               token.getFileLine(),
+                                               token.getFileColumn());
+                        }
+                    }
+                }
+            } else {
+                // No labels provided, assume taxon position same as in taxa block
+                nexusParser->logMesssage(
+                            QString("%1 BLOCK: MATRIX: found taxon [T%2] [NO LABEL]. Attempting to extract chararcter states...")
+                            .arg(blockID)
+                            .arg(currentTaxon+1)
+                            );
+
+                if (page == 0){
+                    taxonPos.insert(currentTaxon,currentTaxon);
+                }
+            }
+
+            // Begin loop through characters
+            for (currentCharacter = firstChararcter; currentCharacter < lastChararcter; currentCharacter++) // loop #3
+            {
+                // As we have stored all characters found in theNEXUS file we expect there to be the same number of
+                // character columns too. We do not eliminate any here as that information is already stored in the
+                // Character data object with the characterList. Therefore can exclude the data as needs be later on.
+
+                // ok will be false only if a newline character is encountered before character j processed
+                bool ok = handleNextState(token, currentTaxon, currentCharacter);
+
+                if (interleaving && !ok){
+                    if (lastChararcter < ncharTotal && currentCharacter != lastChararcter) {
+                        throw NexusParserException("Each line within an interleave page must comprise the same number of characters",
+                                           token.getFilePosition(),
+                                           token.getFileLine(),
+                                           token.getFileColumn());
+                    }
+
+                    // currentCharacter should be firstChar in next go around
+                    nextFirst = currentCharacter;
+
+                    // Set lastChararcter to currentCharacter so that we can check to make sure the remaining lines in this interleave
+                    // page end at the same place
+                    lastChararcter = currentCharacter;
+                }
+
+            } // end loop #3
+
+        } // end loop #2
+
+        firstChararcter = nextFirst;
+        lastChararcter = ncharTotal;
+
+        // If currentCharacter equals ncharTotal, then we've just finished reading the last interleave page
+        // and thus should break from the outer loop. Note that if we are not interleaving, this will
+        // still work since lastChar is initialized to ncharTotal and never changed
+        if (currentCharacter == ncharTotal) {
+            break;
+        }
+
+        page++;
+    } // end loop #1
+}
+
+void NexusParserCharactersBlock::handleTransposedMatrix(NexusParserToken &token)
+{
+    nexusParser->logMesssage(
+                QString("%1 BLOCK: MATRIX: running tranposed matrix reader...")
+                .arg(blockID)
+                );
+}
+
+// Called from handleStandarMatrix or handleTransposedMatrix function to read in the next state. Always returns true
+// except in the special case of an interleaved matrix, in which case it returns false if a newline character is
+// encountered before the next token.
+
+bool NexusParserCharactersBlock::handleNextState(NexusParserToken &token, int currentTaxon, int currentCharacter)
+{
+    int taxonID = taxaBlock->getTaxonID(currentTaxon);
+    int characterID = characterList[currentCharacter].getID();
+
+    if (interleaving) {
+        token.setLabileFlagBit(NexusParserToken::newlineIsToken);
+    }
+
+    if (datatype == NexusParserCharactersBlock::continuous){
+        // TO DO .... as the application may want to allow the use of contiuous data.
+    }
+
+    // This should be the state for taxon 'currentTaxon' and character 'currentCharacter'
+    if (!tokens){
+        token.setLabileFlagBit(NexusParserToken::parentheticalToken);
+        token.setLabileFlagBit(NexusParserToken::curlyBracketedToken);
+        token.setLabileFlagBit(NexusParserToken::singleCharacterToken);
+    }
+
+    token.getNextToken();
+
+    if (interleaving && token.getAtEndOfLine()){
+        return false;
+    }
+
+    // Make sure we didn't run out of file
+    if (token.getAtEndOfFile()) {
+        throw NexusParserException("Unexpected end of file encountered while reading the MATRIX BLOCK",
+                           token.getFilePosition(),
+                           token.getFileLine(),
+                           token.getFileColumn());
+    }
+
+    // If we didn't run out of file, there is no reason why we should have a zero-length token on our hands
+    Q_ASSERT(token.getTokenLength() > 0);
+
+    // See if any equate macros apply. Equates should always respect case.
+    QString symbol = token.getToken(true);
+    for(int i = 0; i < equatesList.count(); i++)
+    {
+        if (equatesList[i].getSymbol() == symbol) {
+            token.replaceToken(equatesList[i].getEquivalent());
+        }
+    }
+
+    // Handle case of single-character state symbol
+    if (!tokens && token.getTokenLength() == 1) {
+
+        QChar ch = token.getToken()[0];
+
+        // Check for missing data symbol and add to martixGrid if found
+        if (ch == missing) {
+            cellAdd(taxonID, characterID, QString(missing), "", false, true, false, false, false);
+        }
+        // Check for matchchar symbol and add to martixGrid if found
+        else if (ch == matchchar) {
+            cellAdd(taxonID, characterID, QString(matchchar), "", false, false, false, true, false);
+        }
+        // Check for gap symbol and add to martixGrid if found
+        else if (ch == gap) {
+            cellAdd(taxonID, characterID, QString(gap), "", false, false, true, false, false);
+        }
+        // Look up the position of this state in the symbols array
+        else {
+            // Check the symbol is found in the symbols list
+            if(!isInSymbols(ch)){
+                errorMessage = "State specified (";
+                errorMessage += token.getToken();
+                errorMessage += ") for taxon ";
+                errorMessage += (currentTaxon+1);
+                errorMessage += ", character ";
+                errorMessage += (currentCharacter+1);
+                errorMessage += ", not found in list of valid symbols";
+                throw NexusParserException(errorMessage,
+                                   token.getFilePosition(),
+                                   token.getFileLine(),
+                                   token.getFileColumn());
+            }
+            cellAdd(taxonID, characterID, QString(ch), "", false, false, false, false, false);
+        }
+    }
+    // Handle case of state sets when tokens is not in effect
+    else if (!tokens && token.getTokenLength() > 1) {
+        // Token should be in one of the following forms: {acg} {a~g} {a c g} (acg) (a~g) (a c g)
+        QString t = token.getToken();
+        int len = t.size();
+        bool polymorphic = (t[0] == QChar('('));
+        bool uncertainty = (t[0] == QChar('{'));
+        bool tildeFound = false;
+
+        Q_ASSERT(polymorphic || uncertainty);
+        Q_ASSERT((polymorphic && t[len-1] == QChar(')')) || (uncertainty && t[len-1] == QChar('}')));
+
+        int firstNonBlank = 1;
+        while (t[firstNonBlank] == QChar(' ') || t[firstNonBlank] == QChar('\t')) {
+            firstNonBlank++;
+        }
+
+        int lastNonBlank = len-2;
+        while (t[lastNonBlank] == QChar(' ') || t[lastNonBlank] == QChar('\t')) {
+            lastNonBlank--;
+        }
+
+        if (t[firstNonBlank] == QChar('~') || t[lastNonBlank] == QChar('~')) {
+            errorMessage = token.getToken();
+            errorMessage += " does not represent a valid range of states";
+            throw NexusParserException(errorMessage,
+                               token.getFilePosition(),
+                               token.getFileLine(),
+                               token.getFileColumn());
+        }
+
+        int i = 1;
+        QChar lastRead;
+        QString newToken = QString(t[0]);
+        for(;;) // loop #1
+        {
+            if (t[i] == QChar(')') || t[i] == QChar('}')) {
+                break;
+            }
+
+            if (t[i] == QChar(' ') || t[i] == QChar('\t') || t[i] == QChar(',')) {
+                i++;
+                continue;
+            }
+
+            // t[i] should be either '~' or one of the state symbols
+            if (t[i] == QChar('~')){
+                tildeFound = true;
+            } else {
+                // Add state symbol and record if it is the first or last one in case we encounter a tilde
+                if (tildeFound){
+                    // Go back to last entered symbol and find position in symbolsList, then add every symbol
+                    // up until and including the current one.
+                    int startPosition = symbols.indexOf(lastRead)+1;
+                    newToken += QString(t[startPosition]);
+                    for(int s = startPosition; t[i] != symbols[s]; s++){
+                        newToken += QString(t[s]);
+                    }
+                    newToken += QString(t[i]);
+                    tildeFound = false;
+                } else {
+                    // Check all states are valid
+                    if(!isInSymbols(t[i])){
+                        errorMessage = "State specified (";
+                        errorMessage += t[i];
+                        errorMessage += ") for taxon ";
+                        errorMessage += (currentTaxon+1);
+                        errorMessage += ", character ";
+                        errorMessage += (currentCharacter+1);
+                        errorMessage += ", not found in list of valid symbols";
+                        throw NexusParserException(errorMessage,
+                                           token.getFilePosition(),
+                                           token.getFileLine(),
+                                           token.getFileColumn());
+
+                    }
+                    lastRead = t[i];
+                    newToken += QString(t[i]);
+                }
+            }
+            i++;
+        } // end loop #1
+        newToken += QString(t[len-1]);
+        cellAdd(taxonID, characterID, newToken, "", polymorphic, false, false, false, uncertainty);
+    }
+    // Handle case in which TOKENS was specified in the FORMAT command
+    else {
+        // TO DO... but not for a while as application wont deal with token just yet!
+    }
+
+    return true;
+}
+
 /*------------------------------------------------------------------------------------/
  * Other Functions
  *-----------------------------------------------------------------------------------*/
 
 // Returns true if `ch' can be found in the `symbols' list. The value of `respectingCase' is used to determine
 // whether or not the search should be case sensitive. Assumes `symbols' is non-NULL.
-bool NxsCharactersBlock::isInSymbols(QChar ch)
+bool NexusParserCharactersBlock::isInSymbols(QChar ch)
 {
     ch = respectingCase ?  ch : ch.toUpper();
     bool found = false;
@@ -1327,120 +1687,66 @@ bool NxsCharactersBlock::isInSymbols(QChar ch)
 
 // Resets standard symbol set after a change in `datatype' is made. Also flushes equates list and installs standard
 // equate macros for the current `datatype'.
-void NxsCharactersBlock::resetSymbols()
+void NexusParserCharactersBlock::resetSymbols()
 {
     symbols.clear();
 
     switch(datatype)
     {
-        case NxsCharactersBlock::dna:
+        case NexusParserCharactersBlock::dna:
             // "ACGT"
-            for(int i = 0; i < nxs->defaultDNAStateSet.count(); i++)
+            for(int i = 0; i < nexusParser->defaultDNAStateSet.count(); i++)
             {
-                symbols.append(nxs->defaultDNAStateSet.at(i).at(0));
+                symbols.append(nexusParser->defaultDNAStateSet.at(i).at(0));
             }
             break;
 
-        case NxsCharactersBlock::rna:
+        case NexusParserCharactersBlock::rna:
             // "ACGU";
-            for(int i = 0; i < nxs->defaultRNAStateSet.count(); i++)
+            for(int i = 0; i < nexusParser->defaultRNAStateSet.count(); i++)
             {
-                symbols.append(nxs->defaultRNAStateSet.at(i).at(0));
+                symbols.append(nexusParser->defaultRNAStateSet.at(i).at(0));
             }
             break;
 
-        case NxsCharactersBlock::nucleotide:
+        case NexusParserCharactersBlock::nucleotide:
             // "ACGT"
-            for(int i = 0; i < nxs->defaultNucleotideStateSet.count(); i++)
+            for(int i = 0; i < nexusParser->defaultNucleotideStateSet.count(); i++)
             {
-                symbols.append(nxs->defaultNucleotideStateSet.at(i).at(0));
+                symbols.append(nexusParser->defaultNucleotideStateSet.at(i).at(0));
             }
             break;
 
-        case NxsCharactersBlock::protein:
+        case NexusParserCharactersBlock::protein:
             // "ACDEFGHIKLMNPQRSTVWY*"
-            for(int i = 0; i < nxs->defaultProteinStateSet.count(); i++)
+            for(int i = 0; i < nexusParser->defaultProteinStateSet.count(); i++)
             {
-                symbols.append(nxs->defaultProteinStateSet.at(i).at(0));
+                symbols.append(nexusParser->defaultProteinStateSet.at(i).at(0));
             }
             break;
 
         default:
             // "01"
-            for(int i = 0; i < nxs->defaultStandardStateSet.count(); i++)
+            for(int i = 0; i < nexusParser->defaultStandardStateSet.count(); i++)
             {
-                symbols.append(nxs->defaultStandardStateSet.at(i).at(0));
+                symbols.append(nexusParser->defaultStandardStateSet.at(i).at(0));
             }
             break;
     }
 
-    equates.clear();
-    getDefaultEquates();
-}
-
-QMap<QString, QString> NxsCharactersBlock::getDefaultEquates()
-{
-    QMap<QString, QString> equatesMap;
-    QStringList equatesList;
-
-    switch(datatype)
-    {
-        case NxsCharactersBlock::dna:
-            equatesList = nxs->defaultDNAEquateStates;
-            break;
-
-        case NxsCharactersBlock::rna:
-            equatesList = nxs->defaultRNAEquateStates;
-            break;
-
-        case NxsCharactersBlock::nucleotide:
-            equatesList = nxs->defaultNucleotideEquateStates;
-            break;
-
-        case NxsCharactersBlock::protein:
-            equatesList = nxs->defaultProteinEquateStates;
-            break;
-
-        default:
-            return equatesMap;
-            break;
-    }
-
-    // Create equatesMap from equatesList;
-    if (equatesList.count() > 0) {
-        for(int i = 0; i < equatesList.count(); i++)
-        {
-            QRegExp rx("(=)");
-            QStringList pair = equatesList.at(i)
-                    .trimmed()
-                    .replace(" ","")
-                    .split(rx);
-            equatesMap.insert(pair[0],pair[1]);
-        }
-    }
-    if (equatesMap.count() > 0) {
-        // Create lowercase keys of the stored uppercase keys/value pairs
-        QList<QString> keys = equatesMap.keys();
-        for(int i = 0; i < keys.count(); i++) {
-            QString uppercase, lowercase;
-            uppercase = keys.at(i);
-            lowercase = uppercase.toLower();
-            equatesMap.insert(lowercase, equatesMap.value(uppercase));
-        }
-
-    }
-    return equatesMap;
+    equatesList.clear();
+    setDefaultEquates();
 }
 
 // Converts a taxon label to a number corresponding to the taxon's position within the list maintained by the
-// NxsTaxaBlock object. This method overrides the virtual function of the same name in the NxsBlock base class. If
+// NexusParserTaxaBlock object. This method overrides the virtual function of the same name in the NexusParserBlock base class. If
 // `str' is not a valid taxon label, returns the value 0.
-int NxsCharactersBlock::taxonLabelToNumber(QString str)
+int NexusParserCharactersBlock::taxonLabelToNumber(QString str)
 {
     int i;
     try {
         i = 1 + taxaBlock->taxonFind(str);
-    } catch(NxsTaxaBlock::NxsX_NoSuchTaxon){
+    } catch(NexusParserTaxaBlock::NexusParserX_NoSuchTaxon){
         i = 0;
     }
 
@@ -1448,9 +1754,9 @@ int NxsCharactersBlock::taxonLabelToNumber(QString str)
 }
 
 // Converts a character label to a 1-offset number corresponding to the character's position within `charLabels'. This
-// method overrides the virtual function of the same name in the NxsBlock base class. If `str' is not a valid character
+// method overrides the virtual function of the same name in the NexusParserBlock base class. If `str' is not a valid character
 // label, returns the value 0.
-int NxsCharactersBlock::charLabelToNumber(QString str)
+int NexusParserCharactersBlock::charLabelToNumber(QString str)
 {
     int k = 0;
     for (int i = 0; i < characterList.count(); ++i)
@@ -1463,29 +1769,9 @@ int NxsCharactersBlock::charLabelToNumber(QString str)
     return k;
 }
 
-// Use to initialize `charPos' map, which keeps track of the original character index in
-// cases where characters have been eliminated. This function is called by handleEliminate in response to encountering
-// an ELIMINATE command in the data file, and this is probably the only place where buildCharPosArray should be called
-// with `checkEliminated' true. buildCharPosArray is also called in handleMatrix, handleCharstatelabels,
-// handleStatelabels, and handleCharlabels.
-void NxsCharactersBlock::buildCharPosArray(bool checkEliminated)
-{
-    charPos.clear();
-
-    int k = 0;
-    for (int j = 0; j < ncharTotal; j++)
-    {
-        if (checkEliminated && isEliminated(j)){
-            charPos.insert(j, INT_MAX);
-        } else {
-            charPos.insert(j, k++);
-        }
-    }
-}
-
 // Returns true if character number `origCharIndex' was eliminated, false otherwise. Returns false immediately if
 // `eliminated' set is empty.
-bool NxsCharactersBlock::isEliminated(int origCharIndex)
+bool NexusParserCharactersBlock::isEliminated(int origCharIndex)
 {
     // Note: it is tempting to try to streamline this method by just looking up character j in charPos to see if it
     // has been eliminated, but this temptation should be resisted because this function is used in setting up
@@ -1504,11 +1790,30 @@ bool NxsCharactersBlock::isEliminated(int origCharIndex)
     return false;
 }
 
+/*------------------------------------------------------------------------------------/
+ * Character Data Functions
+ *-----------------------------------------------------------------------------------*/
+
+// Add a new Character data object to the characterList
+int NexusParserCharactersBlock::characterAdd(QString characterLabel, bool isEliminated) {
+    isEmpty = false;
+    Character newCharacter = Character(nextCharacterID,characterLabel,"");
+    newCharacter.setIsEliminated(isEliminated);
+    characterList.append(newCharacter);
+    nextCharacterID++;
+    return (characterList.count());
+}
+
+// Edit character label in list at characterList position
+void NexusParserCharactersBlock::characterLabelEdit(int position, QString characterLabel) {
+    characterList[position].setLabel(characterLabel);
+}
+
 // Returns current index of character in matrix. This may differ from the original index if some characters were
 // removed using an ELIMINATE command. For example, character number 9 in the original data matrix may now be at
 // position 8 if the original character 8 was eliminated. The parameter `origCharIndex' is assumed to range from
 // 0 to `ncharTotal' - 1.
-int NxsCharactersBlock::getCharPos(int origCharIndex)
+int NexusParserCharactersBlock::getCharPos(int origCharIndex)
 {
     Q_ASSERT(!charPos.isEmpty());
     Q_ASSERT(origCharIndex < ncharTotal);
@@ -1516,12 +1821,142 @@ int NxsCharactersBlock::getCharPos(int origCharIndex)
     return charPos.value(origCharIndex);
 }
 
+// Use to initialize `charPos' map, which keeps track of the original character index in
+// cases where characters have been eliminated. This function is called by handleEliminate in response to encountering
+// an ELIMINATE command in the data file, and this is probably the only place where buildCharPosArray should be called
+// with `checkEliminated' true. buildCharPosArray is also called in handleMatrix, handleCharstatelabels,
+// handleStatelabels, and handleCharlabels.
+void NexusParserCharactersBlock::buildCharPosArray(bool checkEliminated)
+{
+    charPos.clear();
 
-int NxsCharactersBlock::characterAdd(QString characterLabel, bool isEliminated) {
-    isEmpty = false;
-    Character newCharacter = Character(nextCharacterID,characterLabel,"");
-    newCharacter.setIsEliminated(isEliminated);
-    characterList.append(newCharacter);
-    nextCharacterID++;
-    return (characterList.count());
+    int k = 0;
+    for (int j = 0; j < ncharTotal; j++)
+    {
+        if (checkEliminated && isEliminated(j)){
+            charPos.insert(j, INT_MAX);
+        } else {
+            charPos.insert(j, k++);
+        }
+    }
+}
+
+/*------------------------------------------------------------------------------------/
+ * Equate Data Functions
+ *-----------------------------------------------------------------------------------*/
+
+// Add a new Equate data object to the equatesList
+int NexusParserCharactersBlock::equateAdd(
+        QString symbol,
+        QString equivalent
+        )
+{
+    equatesList.append(Equate(nextEquatesID,symbol, equivalent));
+    nextEquatesID++;
+    return (equatesList.count());
+}
+
+QList<Equate> NexusParserCharactersBlock::setDefaultEquates()
+{
+    QStringList equatesStringList;
+
+    switch(datatype)
+    {
+        case NexusParserCharactersBlock::dna:
+            equatesStringList = nexusParser->defaultDNAEquateStates;
+            break;
+
+        case NexusParserCharactersBlock::rna:
+            equatesStringList = nexusParser->defaultRNAEquateStates;
+            break;
+
+        case NexusParserCharactersBlock::nucleotide:
+            equatesStringList = nexusParser->defaultNucleotideEquateStates;
+            break;
+
+        case NexusParserCharactersBlock::protein:
+            equatesStringList = nexusParser->defaultProteinEquateStates;
+            break;
+
+        default:
+            return equatesList;
+            break;
+    }
+
+    // Create equatesMap from equatesList;
+    if (equatesStringList.count() > 0) {
+        for(int i = 0; i < equatesStringList.count(); i++)
+        {
+            QRegExp rx("(=)");
+            QStringList pair = equatesStringList.at(i)
+                    .trimmed()
+                    .replace(" ","")
+                    .split(rx);
+            equateAdd(pair[0], pair[1]);
+        }
+    }
+    // Create lowercase keys of the stored uppercase keys/value pairs
+    int count = equatesList.count();
+    for(int i = 0; i < count; i++) {
+        QString uppercase, lowercase;
+        uppercase = equatesList[i].getSymbol();
+        lowercase = uppercase.toLower();
+        equateAdd(lowercase, equatesList[i].getEquivalent());
+    }
+
+    return equatesList;
+}
+
+/*------------------------------------------------------------------------------------/
+ * Matrix Grid Data Functions
+ *-----------------------------------------------------------------------------------*/
+
+// Add Data Cell
+bool NexusParserCharactersBlock::cellAdd(
+        int taxonID,
+        int characterID,
+        QString state,
+        QString notes,
+        bool isPolymorphic,
+        bool isMissing,
+        bool isGap,
+        bool isMatchchar,
+        bool isUncertain
+        )
+{
+    Cell *cellData = new Cell(state, notes);
+
+    if (isPolymorphic) {
+        cellData->setPolymorphic(true);
+    } else if (isMissing) {
+        cellData->setMissing(true);
+    } else if (isGap) {
+        cellData->setGap(true);
+    } else if (isMatchchar) {
+        cellData->setMatchchar(true);
+    } else if (isUncertain) {
+        cellData->setUncertainty(true);
+    }
+
+    matrixGrid.insert(returnLocator(taxonID, characterID), cellData);
+
+    return true;
+}
+
+// Cell count
+int NexusParserCharactersBlock::cellCount()
+{
+    return matrixGrid.count();
+}
+
+// Create Cell Locator
+QPair<int,int> NexusParserCharactersBlock::returnLocator(
+        int taxonID,
+        int characterID
+        )
+{
+    QPair<int,int> locator;
+    locator.first = taxonID;
+    locator.second = characterID;
+    return locator;
 }

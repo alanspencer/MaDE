@@ -37,21 +37,19 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NXSEXCEPTION_H
-#define NXSEXCEPTION_H
+#ifndef NEXUSPARSER_H
+#define NEXUSPARSER_H
 
-class NxsToken;
+#include <QWidget>
+#include <QFile>
+#include <QTextStream>
 
-class NxsException
-{
-    public:
-        NxsException(QString s, qint64 fPos = Q_INT64_C(0), qint64 fLine = Q_INT64_C(0), qint64 fCol = Q_INT64_C(0));
-        NxsException(const QString &s, const NxsToken &t);
+#include "nexusparserexception.h"
+#include "nexusparsertoken.h"
+#include "nexusparserblock.h"
+#include "nexusparserreader.h"
+#include "nexusparsersetreader.h"
+#include "nexusparsertaxablock.h"
+#include "nexusparsercharactersblock.h"
 
-        QString	msg;	/* NexusString to hold message */
-        qint64 filePos;	/* current file position */
-        qint64 fileLine;	/* current line in file */
-        qint64 fileCol;	/* column of current line */
-};
-
-#endif // NXSEXCEPTION_H
+#endif // NEXUSPARSER_H

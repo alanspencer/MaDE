@@ -37,15 +37,15 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "ncl.h"
+#include "nexusparser.h"
 
 /*----------------------------------------------------------------------------------------------------------------------
-* NxsToken objects are used by Nxs to extract words (tokens) from a NEXUS data file. NexusToken objects
+* NexusParserToken objects are used by Nxs to extract words (tokens) from a NEXUS data file. NexusToken objects
 * know to correctly skip NEXUS comments and understand NEXUS punctuation, making reading a NEXUS file as simple as
 * repeatedly calling the getNextToken() function and then interpreting the token returned.
 *----------------------------------------------------------------------------------------------------------------------*/
 
-NxsToken::NxsToken(QTextStream &i) : in(i)
+NexusParserToken::NexusParserToken(QTextStream &i) : in(i)
 {
 
     nexusData = in.readAll();
@@ -87,15 +87,15 @@ NxsToken::NxsToken(QTextStream &i) : in(i)
     punctuation.append(QChar('\0'));
 }
 
-void NxsToken::setLabileFlagBit(int bit)
+void NexusParserToken::setLabileFlagBit(int bit)
 {
     labileFlags |= bit;
 }
 
 // Advances the token, and returns the unsigned int that the token represents
-// Sets errormsg and raises a NxsException on failure. `contextString` is used in error messages:
+// Sets errormsg and raises a NexusParserException on failure. `contextString` is used in error messages:
 // "${contextString} must be a number greater than 0"
-int NxsToken::demandPositiveInt(NxsToken &token, QString &errorMessage, QString contextString)
+int NexusParserToken::demandPositiveInt(NexusParserToken &token, QString &errorMessage, QString contextString)
 {
     token.getNextToken();
     int i = token.getToken().toInt();
@@ -104,7 +104,7 @@ int NxsToken::demandPositiveInt(NxsToken &token, QString &errorMessage, QString 
         errorMessage += " must be a number greater than 0. Found";
         errorMessage += token.getToken();
         errorMessage += " instead";
-        throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+        throw NexusParserException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
     }
     return i;
 }
@@ -112,33 +112,33 @@ int NxsToken::demandPositiveInt(NxsToken &token, QString &errorMessage, QString 
 /*------------------------------------------------------------------------------------/
  * Return functions
  *-----------------------------------------------------------------------------------*/
-qint64 NxsToken::getFileColumn() const
+qint64 NexusParserToken::getFileColumn() const
 {
     return fileCol;
 }
 
-qint64 NxsToken::getFilePosition() const
+qint64 NexusParserToken::getFilePosition() const
 {
     return filePos;
 }
 
-qint64 NxsToken::getFileLine() const
+qint64 NexusParserToken::getFileLine() const
 {
     return fileLine;
 }
 
-bool NxsToken::getAtEndOfFile()
+bool NexusParserToken::getAtEndOfFile()
 {
     return atEndOfFile;
 }
 
-bool NxsToken::getAtEndOfLine()
+bool NexusParserToken::getAtEndOfLine()
 {
     return atEndOfLine;
 }
 
 // Returns token in upper case (default), set toUpper to false to keep case
-QString NxsToken::getToken(bool respectCase)
+QString NexusParserToken::getToken(bool respectCase)
 {
     if (!respectCase) {
         return token.toUpper();
@@ -148,13 +148,13 @@ QString NxsToken::getToken(bool respectCase)
 }
 
 // Returns token.size()
-int NxsToken::getTokenLength()
+int NexusParserToken::getTokenLength()
 {
     return token.size();
 }
 
 // Returns true if current token is a single character and this character is either '+' or '-'.
-bool NxsToken::isPlusMinusToken()
+bool NexusParserToken::isPlusMinusToken()
 {
     if (token.size() == 1 && (token[0] == '+' || token[0] == '-')){
         return true;
@@ -165,7 +165,7 @@ bool NxsToken::isPlusMinusToken()
 
 // Returns true if current token is a single character and this character is a punctuation character (as defined in
 // IsPunctuation function).
-bool NxsToken::isPunctuationToken()
+bool NexusParserToken::isPunctuationToken()
 {
     if (token.size() == 1 && isPunctuation(QChar(token[0]))){
         return true;
@@ -176,7 +176,7 @@ bool NxsToken::isPunctuationToken()
 
 // Returns true if current token is a single character and this character is a whitespace character (as defined in
 // IsWhitespace function).
-bool NxsToken::isWhitespaceToken()
+bool NexusParserToken::isWhitespaceToken()
 {
     if (token.size() == 1 && isWhitespace(QChar(token[0]))){
         return true;
@@ -186,7 +186,7 @@ bool NxsToken::isWhitespaceToken()
 }
 
 //Strips whitespace from currently-stored token. Removes leading, trailing, and embedded whitespace characters.
-void NxsToken::stripWhitespace()
+void NexusParserToken::stripWhitespace()
 {
     QString str;
     for (int i = 0; i < token.size(); i++)
@@ -199,7 +199,7 @@ void NxsToken::stripWhitespace()
     token = str;
 }
 
-bool NxsToken::equals(QString str, bool respectCase)
+bool NexusParserToken::equals(QString str, bool respectCase)
 {
     QString tokenStr = token;
     if (!respectCase) {
@@ -217,12 +217,12 @@ bool NxsToken::equals(QString str, bool respectCase)
 /*------------------------------------------------------------------------------------/
  * Append functions
  *-----------------------------------------------------------------------------------*/
-void NxsToken::appendToToken(QChar ch)
+void NexusParserToken::appendToToken(QChar ch)
 {
     token.append(ch);
 }
 
-void NxsToken::appendToComment(QChar ch)
+void NexusParserToken::appendToComment(QChar ch)
 {
     comment.append(ch);
 }
@@ -230,7 +230,7 @@ void NxsToken::appendToComment(QChar ch)
 // This function is called whenever an output comment (i.e., a comment beginning with an exclamation point) is found
 // in the data file. This version of OutputComment does nothing; override this virtual function to display the output
 // comment in the most appropriate way for the platform you are supporting.
-void NxsToken::outputComment(const QString)
+void NexusParserToken::outputComment(const QString)
 {
 }
 
@@ -246,7 +246,7 @@ void NxsToken::outputComment(const QString)
 *	o in all cases, the variable filePos is updated using a call to the pos function of QTextStream.
 */
 
-QChar NxsToken::getNextChar()
+QChar NexusParserToken::getNextChar()
 {
     QChar ch, chNext;
 
@@ -294,7 +294,7 @@ QChar NxsToken::getNextChar()
 *	  as the next token
 *	o paired single quotes are automatically converted to single quotes before being stored
 *	o comments are handled automatically (normal comments are treated as whitespace and output comments are passed to
-*	  the function outputComment which does nothing in the NxsToken class but can be overridden in a derived
+*	  the function outputComment which does nothing in the NexusParserToken class but can be overridden in a derived
 *     class to handle these in an appropriate fashion)
 *	o leading whitespace (including comments) is automatically skipped
 *	o if the end of the file is reached on reading this token, the atEndOfFile flag is set and may be queried using the
@@ -309,7 +309,7 @@ QChar NxsToken::getNextChar()
 *	each application.
 */
 
-void NxsToken::getNextToken()
+void NexusParserToken::getNextToken()
 {
     resetToken();
 
@@ -396,7 +396,7 @@ void NxsToken::getNextToken()
                     appendToToken(ch);
                 } else {
                     QString errormessage = "Expecting second single quote character";
-                    throw NxsException(errormessage, getFilePosition(), getFileLine(), getFileColumn());
+                    throw NexusParserException(errormessage, getFilePosition(), getFileLine(), getFileColumn());
                 }
             } else {
                 // Get rest of quoted NEXUS word and break, since we will have eaten one token after calling getQuoted.
@@ -423,7 +423,7 @@ void NxsToken::getNextToken()
     labileFlags = 0;
 }
 
-void NxsToken::resetToken()
+void NexusParserToken::resetToken()
 {
     token.clear();
 }
@@ -432,7 +432,7 @@ void NxsToken::resetToken()
  * Character Matching Functions
  *-----------------------------------------------------------------------------------*/
 
-bool NxsToken::searchForCharInList(QList<QChar> searchIn, QChar searchFor)
+bool NexusParserToken::searchForCharInList(QList<QChar> searchIn, QChar searchFor)
 {
     for (int i = 0; i < searchIn.count(); i++){
         if (searchIn[i] == searchFor) {
@@ -442,7 +442,7 @@ bool NxsToken::searchForCharInList(QList<QChar> searchIn, QChar searchFor)
     return false;
 }
 
-bool NxsToken::isWhitespace(QChar ch)
+bool NexusParserToken::isWhitespace(QChar ch)
 {
     bool isWhitespace = false;
 
@@ -458,7 +458,7 @@ bool NxsToken::isWhitespace(QChar ch)
     return isWhitespace;
 }
 
-bool NxsToken::isPunctuation(QChar ch)
+bool NexusParserToken::isPunctuation(QChar ch)
 {
     bool isPunctuation = false;
 
@@ -482,14 +482,14 @@ bool NxsToken::isPunctuation(QChar ch)
  *-----------------------------------------------------------------------------------*/
 
 // Returns copy of str but with quoting according to the NEXUS Standard if it needs to be quoted.
-QString NxsToken::escapeString(const QString &str)
+QString NexusParserToken::escapeString(const QString &str)
 {
     return (needsQuotes(str) ? getQuoted(str) : str);
 }
 
 // Returns copy of s but with quoting according to the NEXUS Standard (single quotes around the token and all internal
 // single quotes replaced with a pair of single quotes.
-QString NxsToken::getQuoted(const QString &str)
+QString NexusParserToken::getQuoted(const QString &str)
 {
     QString withQuotes;
     withQuotes.reserve(str.length() + 4);
@@ -503,7 +503,7 @@ QString NxsToken::getQuoted(const QString &str)
     return withQuotes;
 }
 
-bool NxsToken::needsQuotes(const QString &str)
+bool NexusParserToken::needsQuotes(const QString &str)
 {
     for (int i = 0; i > str.length(); i++){
         const QChar &ch = str[i];
@@ -539,7 +539,7 @@ bool NxsToken::needsQuotes(const QString &str)
 // function reads characters until the next single quote is encountered. An exception occurs if two single quotes occur
 // one after the other, in which case the function continues to gather characters until an isolated single quote is
 // found. The tandem quotes are stored as a single quote character in the token NxsString.
-void NxsToken::getQuoted()
+void NexusParserToken::getQuoted()
 {
     QChar ch;
 
@@ -576,7 +576,7 @@ void NxsToken::getQuoted()
 // an output stream has been attached, writes the output comment to the output stream. Otherwise, output comments are
 // simply ignored like regular comments. If the labileFlag bit saveCommandComments is in effect, the comment (without
 // the square brackets) will be stored in token.
-void NxsToken::getComment()
+void NexusParserToken::getComment()
 {
     // Set comment level to 1 initially.  Every ']' encountered reduceslevel by one, so that we know we can stop when level becomes 0.
     int level = 1;
@@ -586,7 +586,7 @@ void NxsToken::getComment()
 
     if (atEndOfFile){
         errorMessage = "Unexpected end of file inside comment";
-        throw NxsException(errorMessage, getFilePosition(), getFileLine(), getFileColumn());
+        throw NexusParserException(errorMessage, getFilePosition(), getFileLine(), getFileColumn());
     }
 
     // See if first character is the output comment symbol ('!') or command comment symbol (&)
@@ -634,7 +634,7 @@ void NxsToken::getComment()
 
 // Reads rest of parenthetical token (starting '(' already input) up to and including the matching ')' character.  All
 // nested parenthetical phrases will be included.
-void NxsToken::getParentheticalToken()
+void NexusParserToken::getParentheticalToken()
 {
     // Set level to 1 initially.  Every ')' encountered reduces level by one, so that we know we can stop when level becomes 0.
     int level = 1;
@@ -662,7 +662,7 @@ void NxsToken::getParentheticalToken()
 
 // Reads rest of a token surrounded with curly brackets (the starting '{' has already been input) up to and including
 // the matching '}' character. All nested curly-bracketed phrases will be included.
-void NxsToken::getCurlyBracketedToken()
+void NexusParserToken::getCurlyBracketedToken()
     {
     // Set level to 1 initially.  Every '}' encountered reduceslevel by one, so that we know we can stop when level becomes 0.
     int level = 1;
@@ -695,7 +695,7 @@ void NxsToken::getCurlyBracketedToken()
 // next double-quoted NEXUS word. Tandem single quotes inside a double-quoted NEXUS word are saved as two separate
 // single quote characters; to embed a single quote inside a double-quoted NEXUS word, simply use the single quote by
 // itself (not paired with another tandem single quote).
-void NxsToken::getDoubleQuotedToken()
+void NexusParserToken::getDoubleQuotedToken()
 {
     QChar ch;
 
@@ -715,7 +715,7 @@ void NxsToken::getDoubleQuotedToken()
 }
 
 // Replaces the current token with the given 'str'
-void NxsToken::replaceToken(QString str)
+void NexusParserToken::replaceToken(QString str)
 {
     token = str;
 }

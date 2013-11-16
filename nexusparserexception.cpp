@@ -37,9 +37,9 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "ncl.h"
+#include "nexusparser.h"
 
-NxsException::NxsException(QString str, qint64 fPos, qint64 fLine, qint64 fCol)
+NexusParserException::NexusParserException(QString str, qint64 fPos, qint64 fLine, qint64 fCol)
 {
     filePos = fPos;
     fileLine = fLine;
@@ -51,7 +51,7 @@ NxsException::NxsException(QString str, qint64 fPos, qint64 fLine, qint64 fCol)
 /*----------------------------------------------------------------------------------------------------------------------
 *	Creates a NexusException object with the specified message, getting file position information from the NexusToken.
 *---------------------------------------------------------------------------------------------------------------------*/
-NxsException::NxsException(const QString &str, const NxsToken &token)
+NexusParserException::NexusParserException(const QString &str, const NexusParserToken &token)
 {
     msg = str;
     filePos = token.getFilePosition();

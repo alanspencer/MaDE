@@ -37,9 +37,9 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "ncl.h"
+#include "nexusparser.h"
 
-NxsReader::NxsReader(MainWindow *mw, Settings *s)
+NexusParserReader::NexusParserReader(MainWindow *mw, Settings *s)
 {
     mainwindow = mw;
     settings = s;
@@ -65,23 +65,23 @@ NxsReader::NxsReader(MainWindow *mw, Settings *s)
     defaultGapCharacter = settings->getSetting("defaultGapCharacter").toString().at(0);
     defaultMatchCharacter = settings->getSetting("defaultMatchCharacter").toString().at(0);
 
-    NxsLogMesssage(QString("starting NEXUS Class Library."));
+    logMesssage(QString("starting NEXUS Class Library."));
 }
 
 
 // Add a block reader
-void NxsReader::addBlock(QString blockID)
+void NexusParserReader::addBlock(QString blockID)
 {
     if(!blocksToLoad.contains(blockID)) {
         blocksToLoad.append(blockID);
     }
 }
 
-void NxsReader::loadBlocks()
+void NexusParserReader::loadBlocks()
 {
-    NxsBlock *block;
-    NxsTaxaBlock *taxaBlock;
-    NxsCharactersBlock *characterBlock;
+    NexusParserBlock *block;
+    NexusParserTaxaBlock *taxaBlock;
+    NexusParserCharactersBlock *characterBlock;
     bool taxaBlockLoaded = false;
     bool assumptionsBlockLoaded = false;
     bool charactersBlockLoaded = false;
@@ -89,10 +89,10 @@ void NxsReader::loadBlocks()
     for(int i = 0; i < blocksToLoad.count(); i++)
     {
         if(blocksToLoad[i] == "TAXA") {
-            block = taxaBlock = new NxsTaxaBlock(this);
+            block = taxaBlock = new NexusParserTaxaBlock(this);
             taxaBlockLoaded = true;
         } else if (blocksToLoad[i] == "CHARACTERS" && taxaBlockLoaded) {
-            block = characterBlock = new NxsCharactersBlock(this, taxaBlock);
+            block = characterBlock = new NexusParserCharactersBlock(this, taxaBlock);
             charactersBlockLoaded = true;
         }
 
@@ -101,7 +101,7 @@ void NxsReader::loadBlocks()
                 blockList = block;
             } else {
                 // Add new block to end of list
-                NxsBlock *current;
+                NexusParserBlock *current;
                 for (current = blockList; current && current->next;){
                     current = current->next;
                 }
@@ -111,44 +111,44 @@ void NxsReader::loadBlocks()
     }
 }
 
-int NxsReader::getBlockCount(QString blockID)
+int NexusParserReader::getBlockCount(QString blockID)
 {
     return blockIDToBlockList.value(blockID).count();
 }
 
 // Returns a map from all block ids that have been read to all instances that the Nxs knows have been read and
 // have NOT been cleared.
-NxsBlockIDToBlockList NxsReader::getUsedBlocks()
+NexusParserBlockIDToBlockList NexusParserReader::getUsedBlocks()
 {
     return blockIDToBlockList;
 }
 
 
 
-void NxsReader::addBlockToUsedBlockList(const QString &blockID, NxsBlock *block)
+void NexusParserReader::addBlockToUsedBlockList(const QString &blockID, NexusParserBlock *block)
 {
     if (blockIDToBlockList.contains(blockID)) {
-        NxsBlockList exsitingBlockList;
+        NexusParserBlockList exsitingBlockList;
         exsitingBlockList = blockIDToBlockList.value(blockID);
         exsitingBlockList.append(block);
         blockIDToBlockList.insert(blockID, exsitingBlockList);
     } else {
-        NxsBlockList newBlockList;
+        NexusParserBlockList newBlockList;
         newBlockList.append(block);
         blockIDToBlockList.insert(blockID, newBlockList);
     }
 }
 
-int NxsReader::removeBlockFromUsedBlockList(NxsBlock *block)
+int NexusParserReader::removeBlockFromUsedBlockList(NexusParserBlock *block)
 {
     int totalDel = 0;
     int before;
     int after;
     QList<QString> keysToDel;
 
-    NxsBlockIDToBlockList::iterator i;
+    NexusParserBlockIDToBlockList::iterator i;
     for (i = blockIDToBlockList.begin(); i != blockIDToBlockList.end(); ++i) {
-        NxsBlockList & brl = i.value();
+        NexusParserBlockList & brl = i.value();
         before = brl.size();
         brl.removeAll(block);
         after = brl.size();
@@ -164,12 +164,12 @@ int NxsReader::removeBlockFromUsedBlockList(NxsBlock *block)
     return totalDel;
 }
 
-// Reads the NxsReader data file from the input stream provided by `token'. This function is responsible for reading
+// Reads the NexusParserReader data file from the input stream provided by `token'. This function is responsible for reading
 // through the name of a each block. Once it has read a block name, it searches for a block object to
 // handle reading the remainder of the block's contents. The block object is responsible for reading the END or
 // ENDBLOCK command as well as the trailing semicolon. This function also handles reading comments that are outside
 // of blocks, as well as the initial "#NEXUS" keyword.
-bool NxsReader::execute(NxsToken &token)
+bool NexusParserReader::execute(NexusParserToken &token)
 {
     currentBlock = NULL;
     QString errorMessage;
@@ -184,9 +184,9 @@ bool NxsReader::execute(NxsToken &token)
     {
         token.getNextToken();
     }
-    catch (NxsException x)
+    catch (NexusParserException x)
     {
-        NxsLogError(token.errorMessage, 0, 0, 0);
+        logError(token.errorMessage, 0, 0, 0);
         return false;
     }
 
@@ -194,17 +194,17 @@ bool NxsReader::execute(NxsToken &token)
         errorMessage = "Expecting \"#NEXUS\" to be the first token in the file, but found \"";
         errorMessage += token.getToken();
         errorMessage += "\" instead";
-        NxsLogError(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+        logError(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
         return false;
     } else {
-        NxsLogMesssage("found \"#NEXUS\" as the first token in the file.");
+        logMesssage("found \"#NEXUS\" as the first token in the file.");
     }
 
     // Start searching for blocks
-    NxsLogMesssage("searching for BLOCKS...");
+    logMesssage("searching for BLOCKS...");
     for (;;)
     {
-        token.setLabileFlagBit(NxsToken::saveCommandComments);
+        token.setLabileFlagBit(NexusParserToken::saveCommandComments);
         token.getNextToken();
 
         if (token.getAtEndOfFile()){
@@ -215,7 +215,7 @@ bool NxsReader::execute(NxsToken &token)
 
             token.getNextToken();
             QString currentBlockName = token.getToken().toUpper();
-            NxsLogMesssage(QString("looking for BLOCK reader for block called \"%1\".").arg(currentBlockName));
+            logMesssage(QString("looking for BLOCK reader for block called \"%1\".").arg(currentBlockName));
 
             // Find Block Class to reader BLOCK
             for (currentBlock = blockList; currentBlock != NULL; currentBlock = currentBlock->next)
@@ -224,7 +224,7 @@ bool NxsReader::execute(NxsToken &token)
                     break;
                 }
             }
-            NxsLogMesssage(QString("found a BLOCK called \"%1\" on line %2.").arg(currentBlockName).arg(token.getFileLine()));
+            logMesssage(QString("found a BLOCK called \"%1\" on line %2.").arg(currentBlockName).arg(token.getFileLine()));
 
             if (currentBlock == NULL) {
                 skippingBlock(currentBlockName);
@@ -245,11 +245,11 @@ bool NxsReader::execute(NxsToken &token)
                         currentBlock->read(token);
                         // Add to run block list?
                         addBlockToUsedBlockList(currentBlockName, currentBlock);
-                    } catch (NxsException x) {
+                    } catch (NexusParserException x) {
                         if (currentBlock->errorMessage.length() > 0) {
-                            NxsLogError(currentBlock->errorMessage, x.filePos, x.fileLine, x.fileCol);
+                            logError(currentBlock->errorMessage, x.filePos, x.fileLine, x.fileCol);
                         } else {
-                            NxsLogError(x.msg, x.filePos, x.fileLine, x.fileCol);
+                            logError(x.msg, x.filePos, x.fileLine, x.fileCol);
                         }
                         currentBlock->reset();
                         currentBlock = NULL;
@@ -276,7 +276,7 @@ bool NxsReader::execute(NxsToken &token)
 
 
     int nMilliSeconds = runTimer.elapsed();
-    NxsLogMesssage(QString("NEXUS Class Library has executed and returned with no fatal errors in %1 ms.").arg(nMilliSeconds));
+    logMesssage(QString("NEXUS Class Library has executed and returned with no fatal errors in %1 ms.").arg(nMilliSeconds));
 
 
     return true;
@@ -287,54 +287,54 @@ bool NxsReader::execute(NxsToken &token)
 // is ok to purge data currently contained in this block. If user is asked whether existing data should be deleted, and
 // the answer comes back no, then then the overrided function should return false, otherwise it should return true.
 // This (base class) version always returns true.
-bool NxsReader::enteringBlock(QString currentBlockName)
+bool NexusParserReader::enteringBlock(QString currentBlockName)
 {
-    NxsLogMesssage(QString("entering BLOCK called \"%1\"...").arg(currentBlockName));
+    logMesssage(QString("entering BLOCK called \"%1\"...").arg(currentBlockName));
     return true;
 }
 
 // Called by the Nxs object when a block named `blockName' is being exited. Allows derived class overriding this
 // function to notify user of progress in parsing the NEXUS file.
-void NxsReader::exitingBlock(QString currentBlockName)
+void NexusParserReader::exitingBlock(QString currentBlockName)
 {
-    NxsLogMesssage(QString("exiting BLOCK called \"%1\"...").arg(currentBlockName));
+    logMesssage(QString("exiting BLOCK called \"%1\"...").arg(currentBlockName));
 }
 
-// Called after `block' has returned from NxsReader::read()
-void NxsReader::postBlockReadingHook(NxsBlock *block)
+// Called after `block' has returned from NexusParserReader::read()
+void NexusParserReader::postBlockReadingHook(NexusParserBlock *block)
 {
-    NxsLogMesssage(QString("running post-read hook on BLOCK called \"%1\"...").arg(block->getID()));
+    logMesssage(QString("running post-read hook on BLOCK called \"%1\"...").arg(block->getID()));
 
 }
 
-void NxsReader::skippingBlock(QString currentBlockName)
+void NexusParserReader::skippingBlock(QString currentBlockName)
 {
-    NxsLogMesssage(QString("no reader found for BLOCK called \"%1\", skipping BLOCK.").arg(currentBlockName));
+    logMesssage(QString("no reader found for BLOCK called \"%1\", skipping BLOCK.").arg(currentBlockName));
 }
 
-void NxsReader::skippingDisabledBlock(QString currentBlockName)
+void NexusParserReader::skippingDisabledBlock(QString currentBlockName)
 {
-    NxsLogMesssage(QString("BLOCK called \"%1\" is disabled, skipping BLOCK.").arg(currentBlockName));
+    logMesssage(QString("BLOCK called \"%1\" is disabled, skipping BLOCK.").arg(currentBlockName));
 }
 
-bool NxsReader::readUntilEndblock(NxsToken token, QString currentBlockName)
+bool NexusParserReader::readUntilEndblock(NexusParserToken token, QString currentBlockName)
 {
     for (;;)
     {
         token.getNextToken();
         if (token.equals("END") || token.equals("ENDBLOCK")){
-            NxsLogMesssage(QString("found \"END\" or \"ENDBLOCK\" for BLOCK called \"%1\" on line %2.").arg(currentBlockName).arg(token.getFileLine()));
+            logMesssage(QString("found \"END\" or \"ENDBLOCK\" for BLOCK called \"%1\" on line %2.").arg(currentBlockName).arg(token.getFileLine()));
             token.getNextToken();
             if (!token.equals(";")){
                 QString errorMessage = QString("Expecting ';' after END or ENDBLOCK command, but found \"%1\" instead").arg(token.getToken());
-                NxsLogError(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                logError(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
                 return false;
             }
             return true;
         }
         if (token.getAtEndOfFile()){
             QString errorMessage = QString("Encountered end of file before END or ENDBLOCK in BLOCK called \"%1\".").arg(token.getToken());
-            NxsLogError(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+            logError(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
             return false;
         }
     }
@@ -343,7 +343,7 @@ bool NxsReader::readUntilEndblock(NxsToken token, QString currentBlockName)
 
 // Called when an error is encountered in a NEXUS file. Allows program to give user details of the error as well as
 // the precise location of the error via the application log.
-void NxsReader::NxsLogError(QString message, qint64 filePos, qint64 fileLine, qint64 fileCol)
+void NexusParserReader::logError(QString message, qint64 filePos, qint64 fileLine, qint64 fileCol)
 {
     // Write to main window application log
     mainwindow->logAppend("NEXUS Reader",
@@ -356,7 +356,7 @@ void NxsReader::NxsLogError(QString message, qint64 filePos, qint64 fileLine, qi
 }
 
 // Called when a message is to be logged. Allows program to give user details of the message via the application log.
-void NxsReader::NxsLogMesssage(QString message)
+void NexusParserReader::logMesssage(QString message)
 {
     // Write to main window application log
     mainwindow->logAppend("NEXUS Reader",QString("%1").arg(message));

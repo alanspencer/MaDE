@@ -37,8 +37,8 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NXSREADER_H
-#define NXSREADER_H
+#ifndef NEXUSPARSERREADER_H
+#define NEXUSPARSERREADER_H
 
 /*------------------------------------------------------------------------------------/
  * Single load point for all NEXUS parsing
@@ -51,23 +51,23 @@
 // A good number for this is 76, which is 96 (the number of distinct symbols
 // able to be input from a standard keyboard) less 20 (the number of symbols
 // symbols disallowed by the NEXUS standard for use as state symbols)
-#define NXS_MAX_STATES 76
+#define NEXUS_MAX_STATES 76
 
 #include <mainwindow.h>
 #include <settings.h>
 
-class NxsToken;
-class NxsBlockFactory;
-class NxsBlock;
-class NxsException;
+class NexusParserToken;
+class NexusParserBlockFactory;
+class NexusParserBlock;
+class NexusParserException;
 
-typedef QList<NxsBlock *> NxsBlockList;
-typedef QMap<QString, NxsBlockList> NxsBlockIDToBlockList;
+typedef QList<NexusParserBlock *> NexusParserBlockList;
+typedef QMap<QString, NexusParserBlockList> NexusParserBlockIDToBlockList;
 
-class NxsReader
+class NexusParserReader
 {
 public:
-    NxsReader(MainWindow *mw, Settings *s);
+    NexusParserReader(MainWindow *mw, Settings *s);
 
     MainWindow *mainwindow;
     Settings *settings;
@@ -90,33 +90,33 @@ public:
 
     void addBlock(QString blockID);
     int getBlockCount(QString blockID);
-    bool execute(NxsToken &token);
+    bool execute(NexusParserToken &token);
 
     bool enteringBlock(QString currentBlockName);
     void exitingBlock(QString currentBlockName);
-    void postBlockReadingHook(NxsBlock *block);
+    void postBlockReadingHook(NexusParserBlock *block);
     void skippingBlock(QString currentBlockName);
     void skippingDisabledBlock(QString currentBlockName);
 
-    void NxsLogError(QString message, qint64 filePos, qint64	fileLine, qint64 fileCol);
-    void NxsLogMesssage(QString message);
+    void logError(QString message, qint64 filePos, qint64	fileLine, qint64 fileCol);
+    void logMesssage(QString message);
 
-    NxsBlockIDToBlockList getUsedBlocks();
+    NexusParserBlockIDToBlockList getUsedBlocks();
 
 protected:
-    NxsBlock *currentBlock;	/* pointer to current block in list of blocks */
-    NxsBlock *blockList;
+    NexusParserBlock *currentBlock;	/* pointer to current block in list of blocks */
+    NexusParserBlock *blockList;
 
 
 private:
-    bool readUntilEndblock(NxsToken token, QString currentBlockName);
+    bool readUntilEndblock(NexusParserToken token, QString currentBlockName);
 
-    NxsBlockIDToBlockList blockIDToBlockList;
-    void addBlockToUsedBlockList(const QString &, NxsBlock *);
-    int removeBlockFromUsedBlockList(NxsBlock *);
+    NexusParserBlockIDToBlockList blockIDToBlockList;
+    void addBlockToUsedBlockList(const QString &, NexusParserBlock *);
+    int removeBlockFromUsedBlockList(NexusParserBlock *);
 
     void loadBlocks();
     QList<QString> blocksToLoad;
 };
 
-#endif // NXSREADER_H
+#endif // NEXUSPARSERREADER_H

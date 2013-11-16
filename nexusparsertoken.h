@@ -37,22 +37,22 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NXSTOKEN_H
-#define NXSTOKEN_H
+#ifndef NEXUSPARSERTOKEN_H
+#define NEXUSPARSERTOKEN_H
 
 #include <QtWidgets>
 
-class NxsException;
+class NexusParserException;
 
-class NxsToken
+class NexusParserToken
 {
 public:
-    NxsToken(QTextStream &i);
+    NexusParserToken(QTextStream &i);
 
     static  QString escapeString(const QString &);
     static  QString getQuoted(const QString &);
     static  bool needsQuotes(const QString &);
-    static  int demandPositiveInt(NxsToken &token, QString & errorMessage, QString contextString);
+    static  int demandPositiveInt(NexusParserToken &token, QString & errorMessage, QString contextString);
 
     qint64  getFileColumn() const;
     qint64  getFilePosition() const;
@@ -78,7 +78,7 @@ public:
     virtual void outputComment(const QString str);
 
     /* For use with the variable labileFlags */
-    enum    NxsTokenFlags {
+    enum    NexusParserTokenFlags {
         saveCommandComments = 0x0001,	// if set, command comments of the form [&X] are not ignored but are instead saved as regular tokens (without the square brackets, however)
         parentheticalToken = 0x0002,	// if set, and if next character encountered is a left parenthesis, token will include everything up to the matching right parenthesis
         curlyBracketedToken = 0x0004,	// if set, and if next character encountered is a left curly bracket, token will include everything up to the matching right curly bracket
@@ -132,4 +132,4 @@ private:
     QList<QChar>    whitespace;     // stores the 3 whitespace characters: blank space, tab and newline
 };
 
-#endif // NXSTOKEN_H
+#endif // NEXUSPARSERTOKEN_H

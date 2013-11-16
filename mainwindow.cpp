@@ -662,23 +662,23 @@ void MainWindow::importNexus()
                 QTextStream iStream(&file);
 
                 // New nexusReader(mainwindow, settings)
-                NxsReader nexusReader(mainwindow, settings);
+                NexusParserReader nexusParser(mainwindow, settings);
 
-                // New NxsToken token(QTextStream);
-                NxsToken token(iStream);
+                // New NexusParserToken token(QTextStream);
+                NexusParserToken token(iStream);
 
                 // Add Block Reader
-                nexusReader.addBlock("TAXA");
-                //nexusReader.addBlock("ASSUMPTIONS");
-                nexusReader.addBlock("CHARACTERS");
-                //nexusReader.addBlock("NOTES");
+                nexusParser.addBlock("TAXA");
+                //nexusParser.addBlock("ASSUMPTIONS");
+                nexusParser.addBlock("CHARACTERS");
+                //nexusParser.addBlock("NOTES");
 
-                if(nexusReader.execute(token)) {
+                if(nexusParser.execute(token)) {
                     // Create New Matrix from data
-                    if (nexusReader.getBlockCount("TAXA") != 0) {
+                    if (nexusParser.getBlockCount("TAXA") != 0) {
 
                     }
-                    if (nexusReader.getBlockCount("CHARACTERS") != 0) {
+                    if (nexusParser.getBlockCount("CHARACTERS") != 0) {
 
                     }
 

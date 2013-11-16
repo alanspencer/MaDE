@@ -37,75 +37,41 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NXSBLOCK_H
-#define NXSBLOCK_H
+#ifndef NEXUSPARSERTAXABLOCK_H
+#define NEXUSPARSERTAXABLOCK_H
+#include <QtWidgets>
 
-class NxsReader;
-class NxsToken;
-class NxsException;
+class NexusParserReader;
+class NexusParserBlock;
+class NexusParserException;
+class Taxon;
 
-class NxsBlock
+class NexusParserTaxaBlock : public NexusParserBlock
 {
-
 public:
-    enum NxsCommandResult
-    {
-        STOP_PARSING_BLOCK,
-        HANDLED_COMMAND,
-        UNKNOWN_COMMAND
-    };
-
-    NxsBlock();
-    virtual ~NxsBlock();
-
-    void setNxsReader(NxsReader *pointer);
-    void setEnabled();
-    void setDisabled();
-
-    QString getID();
-    bool getEnabled();
-    bool getEmpty();
-
-    virtual void skippingCommand(QString commandName);
-
-    virtual void handleBlockIDCommand(NxsToken &token);
-    virtual void handleEndblock(NxsToken &token);
-    virtual void handleTitleCommand(NxsToken &token);
-    virtual void read(NxsToken &token);
-    virtual int charLabelToNumber(QString str);
-    virtual int taxonLabelToNumber(QString str);
+    NexusParserTaxaBlock(NexusParserReader *pointer);
+    virtual ~NexusParserTaxaBlock();
     virtual void reset();
 
-    QString errorMessage;
+    int taxonAdd(QString taxonLabel);
+    QList<Taxon> getTaxonList();
+    int getNumTaxonLabels();
+    int taxonFind(QString &str);
+    int taxonIDFind(QString &str);
+    int getTaxonID(int position);
+    bool taxonIsDefined(QString str);
+    void taxonMove(int currentPosition, int requiredPosition);
 
-    NxsBlock *next;		// field pointer to next block in list
-
+    class NexusParserX_NoSuchTaxon {};	// thrown if findTaxon cannot locate a supplied taxon label in the taxonLabels vector
 
 protected:
-    NxsCommandResult	handleBasicBlockCommands(NxsToken &token);
-    void generateUnexpectedTokenException(NxsToken &token, QString expected = NULL);
+    virtual void read(NexusParserToken &token);
+    int handleDimensions(NexusParserToken &token, QString ntaxLabel);
 
-    void demandEquals(NxsToken &token, QString contextString);
-    void demandEndSemicolon(NxsToken &token, QString contextString);
-    int demandPositiveInt(NxsToken &token, QString contextString);
+    int nextTaxonID;
+    QList<Taxon> taxonList;
 
-    NxsReader *nxs;
-    QString blockID;
-    bool isEmpty;               // true if this object is not storing data
-    bool isEnabled;             // true if this block is currently enabled
-    QString title;              // holds the title of the block empty by default
-    QString blockIDString;      // Mesquite generates these. Don't know what they are for...
-    QMap<QString, QVariant> blockData; // standard data return
+    int ntax; // == ntax, number of taxa found
 };
 
-
-class NxsBlockFactory
-{
-public:
-    virtual ~NxsBlockFactory(){}
-    virtual NxsBlock  *	getBlockReaderForID(const QString & id, NxsReader *) = 0;
-    virtual void blockError(NxsBlock *b){ delete b; }
-    virtual void blockSkipped(NxsBlock *b) { delete b; }
-};
-
-#endif // NXSBLOCK_H
+#endif // NEXUSPARSERTAXABLOCK_H

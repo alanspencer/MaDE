@@ -37,23 +37,25 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#ifndef NXSCHARACTERSBLOCK_H
-#define NXSCHARACTERSBLOCK_H
+#ifndef NEXUSPARSERCHARACTERSBLOCK_H
+#define NEXUSPARSERCHARACTERSBLOCK_H
 
 #include <QtWidgets>
 
-class NxsReader;
-class NxsToken;
-class NxsBlock;
-class NxsException;
-class NxsTaxaBlock;
+class NexusParserReader;
+class NexusParserToken;
+class NexusParserBlock;
+class NexusParserException;
+class NexusParserTaxaBlock;
 class Character;
-//class NxsAssumptionsBlock;
+class Equate;
+class Cell;
+//class NexusParserAssumptionsBlock;
 
-class NxsCharactersBlock : public NxsBlock
+class NexusParserCharactersBlock : public NexusParserBlock
 {
 
-typedef QHash<QPair<int, int>, Cell*> NxsCharMatrix;
+//typedef QHash<QPair<int, int>, Cell*> NexusParserCharMatrix;
 
 public:
     enum dataTypesEnum		// values used to represent different basic types of data stored in a CHARACTERS block, and used with the data member `datatype'
@@ -74,8 +76,8 @@ public:
         INDIVIDUALS
     };
 
-    NxsCharactersBlock(NxsReader *pointer, NxsTaxaBlock *tBlock);
-    virtual ~NxsCharactersBlock();
+    NexusParserCharactersBlock(NexusParserReader *pointer, NexusParserTaxaBlock *tBlock);
+    virtual ~NexusParserCharactersBlock();
 
     bool isEliminated(int origCharIndex);
 
@@ -85,56 +87,79 @@ public:
     virtual void reset();
 
 protected:
-    virtual void read(NxsToken &token);
+    virtual void read(NexusParserToken &token);
 
-    void    handleDimensions(NxsToken &token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel);
-    void    handleFormat(NxsToken &token);
-    void    handleEliminate(NxsToken &token);
-    void    handleTaxlabels(NxsToken &token);
-    void    handleCharstatelabels(NxsToken &token);
-    void    handleCharlabels(NxsToken &token);
-    void    handleStatelabels(NxsToken &token);
-    void    handleMatrix(NxsToken &token);
+    void    handleDimensions(NexusParserToken &token, QString newtaxaLabel, QString ntaxLabel, QString ncharLabel);
+    void    handleFormat(NexusParserToken &token);
+    void    handleEliminate(NexusParserToken &token);
+    void    handleTaxlabels(NexusParserToken &token);
+    void    handleCharstatelabels(NexusParserToken &token);
+    void    handleCharlabels(NexusParserToken &token);
+    void    handleStatelabels(NexusParserToken &token);
+    void    handleMatrix(NexusParserToken &token);
+    void    handleStandardMatrix(NexusParserToken &token);
+    void    handleTransposedMatrix(NexusParserToken &token);
+    bool    handleNextState(NexusParserToken &token, int currentTaxon, int currentCharacter);
 
     bool    isInSymbols(QChar ch);
     void    resetSymbols();
-    QMap<QString, QString> getDefaultEquates();
     void    buildCharPosArray(bool checkEliminated = false);
 
-    NxsTaxaBlock *taxaBlock;                // pointer to the TAXA block in which taxon labels are stored
+    NexusParserTaxaBlock *taxaBlock;                    // pointer to the TAXA block in which taxon labels are stored
 
-    int nextCharacterID;
-    int characterAdd(QString characterLabel, bool isEliminated = false);
-    QList <Character> characterList;            // storage for character and state data
-
+    int nextCharacterID;                        // int to give each character a unique ID
+    int characterAdd(QString characterLabel, bool isEliminated = false);    // Add a new character to the QList<Character> characterList.
+    void characterLabelEdit(int position, QString characterLabel);          // Edits the character label stored to the QList<Character> characterList at the given characterID.
+    QList<Character> characterList;             // storage for character and state data
     int     nchar;                              // number of columns in matrix (same as `ncharTotal' unless some characters were eliminated, in which case `ncharTotal' > `nchar')
     int     ncharTotal;                         // total number of characters (same as `nchar' unless some characters were eliminated, in which case `ncharTotal' > `nchar')
+    bool    newchar;                            // true unless CHARLABELS or CHARSTATELABELS command read
+
     int     ntax;                               // number of rows in matrix (same as `ntaxTotal' unless fewer taxa appeared in CHARACTERS MATRIX command than were specified in the TAXA block, in which case `ntaxTotal' > `ntax')
     int     ntaxTotal;                          // number of taxa (same as `ntax' unless fewer taxa appeared in CHARACTERS MATRIX command than were specified in the TAXA block, in which case `ntaxTotal' > `ntax')
     bool    newtaxa;                            // true if NEWTAXA keyword encountered in DIMENSIONS command
-    bool    newchar;                            // true unless CHARLABELS or CHARSTATELABELS command read
-    QChar missing;                              // missing data symbol
-    QChar gap;                                  // gap symbol for use with molecular data
-    QChar matchchar;                            // match symbol to use in matrix
+
+    QChar   missing;                            // missing data symbol
+    QChar   gap;                                // gap symbol for use with molecular data
+    QChar   matchchar;                          // match symbol to use in matrix
+    QList<QChar> symbols;                       // list of valid character state symbols
+
+    QHash<QPair<int, int>, Cell*> matrixGrid;   // stores the matrix data
+    bool cellAdd(                               // add a new cell to the matrix data
+            int taxonID,
+            int characterID,
+            QString state,
+            QString notes = "",
+            bool isPolymorphic = false,
+            bool isMissing = false,
+            bool isGap = false,
+            bool isMatchchar = false,
+            bool isUncertain = false);
+    int cellCount();                            // return a count of the cells in matrixGrid
+    QPair<int,int> returnLocator(int taxonID, int characterID);             // returns a locator baseded on the taxonID and characterID
+
+    int nextEquatesID;                          // int to give each equate a unique ID
+    QList<Equate> equatesList;                  // list of equate symbols (i.e. A = {BCD})
+    int equateAdd(QString symbol, QString equivalent);  // Add an equate symbol/equivalent pair to the QList<Equate> equatesList.
+    QList<Equate> setDefaultEquates();          // Set the default equates as defined in settings.ini
+
     bool    tokens;                             // if false, data matrix entries must be single symbols; if true, multicharacter entries are allows
     bool    respectingCase;                     // if true, RESPECTCASE keyword specified in FORMAT command
     bool    labels;                             // indicates whether or not labels will appear on left side of matrix
     bool    transposing;                        // indicates matrix will be in transposed format
     bool    interleaving;                       // indicates matrix will be in interleaved format
+
     QMap<int, int> eliminated;                  // map of (0-offset) character numbers that have been eliminated (== disabled) ordered by key which is the same as the value. Dirty version of a std::set. Will remain empty if no ELIMINATE command encountered.
     QMap<int, int> charPos;                     // maps character numbers in the data file to column numbers in matrix (key = character pos; value = new character pos; necessary if some characters have been eliminated)
     QMap<int, int> taxonPos;                    // maps taxon numbers in the data file to row numbers in matrix (necessary if fewer taxa appear in CHARACTERS block MATRIX command than are specified in the TAXA block)
     QMap<int, bool> activeChar;                 // `activeChar[i]' true if character `i' not excluded; `i' is in range [0..`nchar')
     QMap<int, bool> activeTaxon;                // `activeTaxon[i]' true if taxon `i' not deleted; `i' is in range [0..`ntax')
-    QList<QChar> symbols;                       // list of valid character state symbols
+
     QStringList items;                          // list of items
-    QMap<QString, QString> equates;             // map of symbols to equates (i.e. A = {BCD})
-    //NxsCharMatrix continuousCharMatrix;        // used for holding continuous data from a matrix
-    //NxsCharMatrix *discreteCharMatrix;          // storage for discrete data  from a matrix
 
 private:
     dataTypesEnum       datatype;       // flag variable (see datatypes enum)
     statesFormatEnum    statesFormat;   // flag variable (see statesFormat enum)
 };
 
-#endif // NXSCHARACTERSBLOCK_H
+#endif // NEXUSPARSERCHARACTERSBLOCK_H

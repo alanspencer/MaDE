@@ -37,16 +37,16 @@
  * USA.
  *-----------------------------------------------------------------------------------------------------*/
 
-#include "ncl.h"
+#include "nexusparser.h"
 
-NxsTaxaBlock::NxsTaxaBlock(NxsReader *pointer)
+NexusParserTaxaBlock::NexusParserTaxaBlock(NexusParserReader *pointer)
 {
-    setNxsReader(pointer);
+    setNexusParserReader(pointer);
     blockID = "TAXA";
     nextTaxonID = 0;
 }
 
-NxsTaxaBlock::~NxsTaxaBlock()
+NexusParserTaxaBlock::~NexusParserTaxaBlock()
 {
     taxonList.clear();
 }
@@ -54,7 +54,7 @@ NxsTaxaBlock::~NxsTaxaBlock()
 // This function provides the ability to read everything following the block name (which is read by the Nxs
 // object) to the end or endblock statement. Characters are read from the input stream in. Overrides the abstract
 // virtual function in the base class.
-void NxsTaxaBlock::read(NxsToken &token)
+void NexusParserTaxaBlock::read(NexusParserToken &token)
 {
     ntax = 0;
     int nominalTaxaNumber = 0;
@@ -65,27 +65,27 @@ void NxsTaxaBlock::read(NxsToken &token)
     for (;;)
     {
         token.getNextToken();
-        NxsBlock::NxsCommandResult result = handleBasicBlockCommands(token);
+        NexusParserBlock::NexusParserCommandResult result = handleBasicBlockCommands(token);
 
-        if (result == NxsBlock::NxsCommandResult(STOP_PARSING_BLOCK)){
+        if (result == NexusParserBlock::NexusParserCommandResult(STOP_PARSING_BLOCK)){
             return;
         }
-        if (result != NxsBlock::NxsCommandResult(HANDLED_COMMAND)){
+        if (result != NexusParserBlock::NexusParserCommandResult(HANDLED_COMMAND)){
             if (token.equals("DIMENSIONS")){
                 nominalTaxaNumber = handleDimensions(token, "NTAX");
             } else if (token.equals("TAXLABELS")) {
                 if (nominalTaxaNumber <= 0) {
-                    throw NxsException("NTAX must be specified before TAXLABELS command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                    throw NexusParserException("NTAX must be specified before TAXLABELS command", token.getFilePosition(), token.getFileLine(), token.getFileColumn());
                 }
 
-                nxs->NxsLogMesssage(QString("TAXA Block: found command \"TAXLABELS\" on line %1, now extracting taxon labels...").arg(token.getFileLine()));
+                nexusParser->logMesssage(QString("TAXA Block: found command \"TAXLABELS\" on line %1, now extracting taxon labels...").arg(token.getFileLine()));
 
                 for (int i = 0; i < nominalTaxaNumber; i++)
                 {
                     token.getNextToken();
                     // Should check to make sure this is not punctuation
                     taxonAdd(token.getToken());
-                    nxs->NxsLogMesssage(QString("TAXA Block: extracted taxon label [T%1] -> %2.").arg(i+1).arg(token.getToken()));
+                    nexusParser->logMesssage(QString("TAXA Block: extracted taxon label [T%1] -> %2.").arg(i+1).arg(token.getToken()));
                 }
                 demandEndSemicolon(token, "TAXLABELS");
             } else {
@@ -96,7 +96,7 @@ void NxsTaxaBlock::read(NxsToken &token)
 
                 if (token.getAtEndOfFile()){
                     errorMessage = "Unexpected end of file encountered";
-                    throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+                    throw NexusParserException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
                 }
             }
         }
@@ -106,10 +106,10 @@ void NxsTaxaBlock::read(NxsToken &token)
 // Called when DIMENSIONS command needs to be parsed from within the TAXA block. Deals with everything after the token DIMENSIONS up
 // to and including the semicolon that terminates the DIMENSIONs command. `ntaxLabel' is simply "NTAX" for this class, but may be
 // different for derived classes that use `ntax' for other things.
-int NxsTaxaBlock::handleDimensions(NxsToken &token, QString ntaxLabel)
+int NexusParserTaxaBlock::handleDimensions(NexusParserToken &token, QString ntaxLabel)
 {
     int nominalTaxaNumber = 0;
-    nxs->NxsLogMesssage(
+    nexusParser->logMesssage(
                 QString("TAXA Block: found command \"DIMENSIONS\" on line %1, now looking for \"%2\"...")
                 .arg(token.getFileLine())
                 .arg(ntaxLabel)
@@ -119,12 +119,12 @@ int NxsTaxaBlock::handleDimensions(NxsToken &token, QString ntaxLabel)
     token.getNextToken();
     if (!token.equals(ntaxLabel)){
         errorMessage = QString("Expecting %1 keyword, but found %2 instead.").arg(ntaxLabel).arg(token.getToken());
-        throw NxsException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+        throw NexusParserException(errorMessage, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
     }
     demandEquals(token, QString("after %1").arg(ntaxLabel));
     nominalTaxaNumber = demandPositiveInt(token, ntaxLabel);
 
-    nxs->NxsLogMesssage(
+    nexusParser->logMesssage(
                 QString("TAXA Block: found command \"%3\" on line %2. NTAX = %1. Now looking for \"TAXLABELS\"...")
                 .arg(nominalTaxaNumber)
                 .arg(token.getFileLine())
@@ -137,7 +137,7 @@ int NxsTaxaBlock::handleDimensions(NxsToken &token, QString ntaxLabel)
 
 // Adds taxon label to end of list of taxon labels and increments ntax by 1. Returns index of taxon label just
 // added.
-int NxsTaxaBlock::taxonAdd(QString taxonLabel)
+int NexusParserTaxaBlock::taxonAdd(QString taxonLabel)
 {
     isEmpty = false;
     taxonList.append(Taxon(nextTaxonID,taxonLabel,""));
@@ -145,29 +145,29 @@ int NxsTaxaBlock::taxonAdd(QString taxonLabel)
     return (taxonList.count());
 }
 
-int NxsTaxaBlock::getNumTaxonLabels()
+int NexusParserTaxaBlock::getNumTaxonLabels()
 {
     // same as nTax
     return taxonList.count();
 }
 
-QList<Taxon> NxsTaxaBlock::getTaxonList()
+QList<Taxon> NexusParserTaxaBlock::getTaxonList()
 {
     return taxonList;
 }
 
 // Flushes taxonLabels and sets taxaNumber to 0 in preparation for reading a new TAXA block.
-void NxsTaxaBlock::reset()
+void NexusParserTaxaBlock::reset()
 {
-    NxsBlock::reset();
+    NexusParserBlock::reset();
     isEmpty = true;
     nextTaxonID = 0;
     taxonList.clear();
 }
 
 // Returns index of taxon named 'str' in taxonLabels list. If taxon named 'str' cannot be found, or if there are no
-// labels currently stored in the taxonLabels list, throws NxsX_NoSuchTaxon exception.
-int NxsTaxaBlock::taxonFind(QString &str)
+// labels currently stored in the taxonLabels list, throws NexusParserX_NoSuchTaxon exception.
+int NexusParserTaxaBlock::taxonFind(QString &str)
 {
     for (int i = 0; i < taxonList.count(); ++i)
     {
@@ -175,12 +175,12 @@ int NxsTaxaBlock::taxonFind(QString &str)
             return i;
         }
     }
-    throw NxsTaxaBlock::NxsX_NoSuchTaxon();
+    throw NexusParserTaxaBlock::NexusParserX_NoSuchTaxon();
 }
 
 // Returns Taxon ID of taxon named 'str' in taxonLabels list. If taxon named 'str' cannot be found, or if there are no
-// labels currently stored in the taxonLabels list, throws NxsX_NoSuchTaxon exception.
-int NxsTaxaBlock::taxonIDFind(QString &str)
+// labels currently stored in the taxonLabels list, throws NexusParserX_NoSuchTaxon exception.
+int NexusParserTaxaBlock::taxonIDFind(QString &str)
 {
     for (int i = 0; i < taxonList.count(); ++i)
     {
@@ -188,17 +188,17 @@ int NxsTaxaBlock::taxonIDFind(QString &str)
             return taxonList[i].getID();
         }
     }
-    throw NxsTaxaBlock::NxsX_NoSuchTaxon();
+    throw NexusParserTaxaBlock::NexusParserX_NoSuchTaxon();
 }
 
 // Returns Taxon ID of taxon at the list position given by 'position'.
-int NxsTaxaBlock::getTaxonID(int position)
+int NexusParserTaxaBlock::getTaxonID(int position)
 {
     return taxonList[position].getID();
 }
 
 // Returns true if taxon label equal to 'str' can be found in the taxonLabels list, and returns false otherwise.
-bool NxsTaxaBlock::taxonIsDefined(QString str)
+bool NexusParserTaxaBlock::taxonIsDefined(QString str)
 {
     bool found = false;
 
@@ -213,7 +213,7 @@ bool NxsTaxaBlock::taxonIsDefined(QString str)
 }
 
 // Move the selected taxon in 'currentPosition' to 'requiredPosition' within the taxonList.
-void NxsTaxaBlock::taxonMove(int currentPosition, int requiredPosition)
+void NexusParserTaxaBlock::taxonMove(int currentPosition, int requiredPosition)
 {
     taxonList.move(currentPosition, requiredPosition);
 }
