@@ -44,6 +44,7 @@
 class NexusParserReader;
 class NexusParserBlock;
 class NexusParserException;
+class NexusParserToken;
 class Taxon;
 
 class NexusParserTaxaBlock : public NexusParserBlock

@@ -46,6 +46,8 @@ NexusParserReader::NexusParserReader(MainWindow *mw, Settings *s)
     blockList = NULL;
     currentBlock = NULL;
 
+    currentWarningMode = WARNINGS_TO_LOG;
+
     // State Sets
     defaultStandardStateSet = settings->getSetting("defaultStandardStateSet").toStringList();           // STANDARD
     allowedStandardStateSet = settings->getSetting("allowedStandardStateSet").toStringList();           // Allowed STANDARD
@@ -357,6 +359,24 @@ void NexusParserReader::logError(QString message, qint64 filePos, qint64 fileLin
                           .arg(fileLine)
                           .arg(fileCol)
                           );
+}
+
+void NexusParserReader::logWarning(QString message, LogWarningLevel warnLevel, NexusParserToken &token)
+{
+    if (currentWarningMode == IGNORE_WARNINGS) {
+        return;
+    } else if (warnLevel >= PROBABLY_INCORRECT_CONTENT_WARNING || currentWarningMode == WARNINGS_ARE_ERRORS) {
+        throw NexusParserException(message, token.getFilePosition(), token.getFileLine(), token.getFileColumn());
+    } else {
+        // Write to main window application log
+        mainwindow->logAppend("NEXUS Reader",
+                              QString("WARNING \"%1\" @ File Position = %2, File Line = %3, File Column = %4.")
+                              .arg(message)
+                              .arg(filePos)
+                              .arg(fileLine)
+                              .arg(fileCol)
+                              );
+    }
 }
 
 // Called when a message is to be logged. Allows program to give user details of the message via the application log.

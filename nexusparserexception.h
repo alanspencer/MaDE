@@ -46,7 +46,7 @@ class NexusParserException
 {
     public:
         NexusParserException(QString s, qint64 fPos = Q_INT64_C(0), qint64 fLine = Q_INT64_C(0), qint64 fCol = Q_INT64_C(0));
-        NexusParserException(const QString &s, const NexusParserToken &t);
+        NexusParserException(QString &s, NexusParserToken &t);
 
         QString	msg;	/* NexusString to hold message */
         qint64 filePos;	/* current file position */

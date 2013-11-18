@@ -49,13 +49,12 @@ NexusParserException::NexusParserException(QString str, qint64 fPos, qint64 fLin
 
 
 /*----------------------------------------------------------------------------------------------------------------------
-*	Creates a NexusException object with the specified message, getting file position information from the NexusToken.
+*	Creates a NexusException object with the specified message, getting file position information from NexusParserToken.
 *---------------------------------------------------------------------------------------------------------------------*/
-NexusParserException::NexusParserException(const QString &str, const NexusParserToken &token)
+NexusParserException::NexusParserException(QString &str, NexusParserToken &token)
 {
     msg = str;
     filePos = token.getFilePosition();
     fileLine = token.getFileLine();
     fileCol = token.getFileColumn();
 }
-
