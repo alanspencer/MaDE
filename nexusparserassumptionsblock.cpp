@@ -318,7 +318,11 @@ void NexusParserAssumptionsBlock::handleUserType(NexusParserToken &token)
     demandEquals(token, "in USERTYPE definition");
 
     // Read data
+    if (csTreeForm) {
 
+    } else {
+        // BEGIN Read as Stepmatrix section
+    }
 
     token.getNextToken();
     if (!token.equals(";")){
